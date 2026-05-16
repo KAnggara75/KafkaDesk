@@ -352,6 +352,11 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			pWg.Add(1)
 			go func(addr string, indices []int) {
 				defer pWg.Done()
+				defer func() {
+					if r := recover(); r != nil {
+						log.Error().Interface("panic", r).Str("leader", addr).Msg("Recovered from panic in offset fetch goroutine")
+					}
+				}()
 
 				client := &kafka.Client{
 					Addr:      kafka.TCP(addr),
@@ -371,7 +376,7 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 				latestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
 					Topics: latestReq,
 				})
-				if err == nil {
+				if err == nil && latestRes != nil && latestRes.Topics != nil {
 					if partitions, ok := latestRes.Topics[topic.Name]; ok {
 						for _, resP := range partitions {
 							// Find which local index this belongs to
@@ -400,7 +405,7 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 				earliestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
 					Topics: earliestReq,
 				})
-				if err == nil {
+				if err == nil && earliestRes != nil && earliestRes.Topics != nil {
 					if partitions, ok := earliestRes.Topics[topic.Name]; ok {
 						for _, resP := range partitions {
 							for _, idx := range indices {
