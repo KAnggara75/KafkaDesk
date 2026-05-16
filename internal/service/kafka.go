@@ -328,6 +328,12 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			leaderPartitions[p.Leader.ID] = append(leaderPartitions[p.Leader.ID], i)
 		}
 
+		log.Debug().
+			Str("topic", topic.Name).
+			Int("leaderCount", len(leaderPartitions)).
+			Int("partitionCount", len(topic.Partitions)).
+			Msg("Starting batch offset fetch for topic")
+
 		var pWg sync.WaitGroup
 		for leaderID, pIndices := range leaderPartitions {
 			// Find leader address
@@ -377,6 +383,8 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 							}
 						}
 					}
+				} else {
+					log.Warn().Err(err).Str("topic", topic.Name).Str("leader", addr).Msg("Failed to fetch latest offsets in batch")
 				}
 
 				// Fetch Earliest Offsets (-2)
@@ -403,6 +411,8 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 							}
 						}
 					}
+				} else {
+					log.Warn().Err(err).Str("topic", topic.Name).Str("leader", addr).Msg("Failed to fetch earliest offsets in batch")
 				}
 			}(leaderAddr, pIndices)
 		}
