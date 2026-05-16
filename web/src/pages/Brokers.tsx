@@ -53,46 +53,26 @@ const Brokers: React.FC = () => {
           setClusters(clustersData);
         }
 
-        // Mock data for Brokers as backend is not ready yet
-        // In real app, we would fetch from `/api/v1/clusters/${clusterName}/brokers`
-        setBrokers([
-          {
-            id: 1,
-            host: '137.184.51.206',
-            port: 24227,
-            rack: 'sgp1',
-            diskUsage: '6.37 KB, 59 segment(s)',
-            partitionsSkew: '-',
-            leaders: 30,
-            leaderSkew: '1.70%',
-            onlinePartitions: 59,
-            isController: false
-          },
-          {
-            id: 2,
-            host: '157.245.118.96',
-            port: 24227,
-            rack: 'sgp1',
-            diskUsage: '6.37 KB, 59 segment(s)',
-            partitionsSkew: '-',
-            leaders: 29,
-            leaderSkew: '-1.70%',
-            onlinePartitions: 59,
-            isController: true
-          }
-        ]);
-
-        setMetrics({
-          brokerCount: 2,
-          activeControllerId: 2,
-          version: '1.0-UNKNOWN',
-          onlinePartitions: 59,
-          totalPartitions: 59,
-          urp: 0,
-          inSyncReplicas: 118,
-          totalReplicas: 118,
-          outOfSyncReplicas: 0
+        // Fetch real data for Brokers
+        const brokersRes = await fetch(`/api/v1/clusters/${clusterName}/brokers`, {
+          headers: { 'Authorization': `Bearer ${token}` }
         });
+
+        if (brokersRes.ok) {
+          const brokersData = await brokersRes.json();
+          setBrokers(brokersData.brokers);
+          setMetrics({
+            brokerCount: brokersData.brokerCount,
+            activeControllerId: brokersData.brokers.find((b: any) => b.isController)?.id || 0,
+            version: brokersData.version,
+            onlinePartitions: brokersData.onlinePartitionCount,
+            totalPartitions: brokersData.onlinePartitionCount + brokersData.offlinePartitionCount,
+            urp: brokersData.underReplicatedPartitionCount,
+            inSyncReplicas: brokersData.inSyncReplicasCount,
+            totalReplicas: brokersData.inSyncReplicasCount + brokersData.outOfSyncReplicasCount,
+            outOfSyncReplicas: brokersData.outOfSyncReplicasCount
+          });
+        }
 
       } catch (err) {
         console.error('Failed to fetch brokers data', err);

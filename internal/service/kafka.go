@@ -33,23 +33,30 @@ type ClusterResponse struct {
 	Features             []string `json:"features"`
 }
 
-type BrokersResponse struct {
-	BrokerCount                   int         `json:"brokerCount"`
-	ZooKeeperStatus               *string     `json:"zooKeeperStatus"`
-	ActiveControllers             int         `json:"activeControllers"`
-	OnlinePartitionCount          int         `json:"onlinePartitionCount"`
-	OfflinePartitionCount         int         `json:"offlinePartitionCount"`
-	InSyncReplicasCount           int         `json:"inSyncReplicasCount"`
-	OutOfSyncReplicasCount        int         `json:"outOfSyncReplicasCount"`
-	UnderReplicatedPartitionCount int         `json:"underReplicatedPartitionCount"`
-	DiskUsage                     []DiskUsage `json:"diskUsage"`
-	Version                       string      `json:"version"`
+type BrokerInfo struct {
+	ID               int     `json:"id"`
+	Host             string  `json:"host"`
+	Port             int     `json:"port"`
+	Rack             *string `json:"rack"`
+	DiskUsage        string  `json:"diskUsage"`
+	PartitionsSkew   string  `json:"partitionsSkew"`
+	Leaders          int     `json:"leaders"`
+	LeaderSkew       string  `json:"leaderSkew"`
+	OnlinePartitions int     `json:"onlinePartitions"`
+	IsController     bool    `json:"isController"`
 }
 
-type DiskUsage struct {
-	BrokerId     int   `json:"brokerId"`
-	SegmentSize  int64 `json:"segmentSize"`
-	SegmentCount int   `json:"segmentCount"`
+type BrokersResponse struct {
+	Brokers                       []BrokerInfo `json:"brokers"`
+	BrokerCount                   int          `json:"brokerCount"`
+	ZooKeeperStatus               *string      `json:"zooKeeperStatus"`
+	ActiveControllers             int          `json:"activeControllers"`
+	OnlinePartitionCount          int          `json:"onlinePartitionCount"`
+	OfflinePartitionCount         int          `json:"offlinePartitionCount"`
+	InSyncReplicasCount           int          `json:"inSyncReplicasCount"`
+	OutOfSyncReplicasCount        int          `json:"outOfSyncReplicasCount"`
+	UnderReplicatedPartitionCount int          `json:"underReplicatedPartitionCount"`
+	Version                       string       `json:"version"`
 }
 
 type KafkaService interface {
@@ -167,18 +174,42 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		}
 	}
 
-	diskUsages := make([]DiskUsage, 0)
+	brokers := make([]BrokerInfo, 0)
 	for _, b := range resp.Brokers {
-		// Mocking disk usage for now as DescribeLogDirs might be complex to implement without more context
-		// or specific kafka-go versions. In a real scenario, we'd use client.DescribeLogDirs.
-		diskUsages = append(diskUsages, DiskUsage{
-			BrokerId:     b.ID,
-			SegmentSize:  6518, // Mock value
-			SegmentCount: onlinePartitions / len(resp.Brokers),
+		isController := b.ID == resp.Controller.ID
+
+		// Calculate partitions for this broker
+		brokerPartitions := 0
+		brokerLeaders := 0
+		for _, topic := range resp.Topics {
+			for _, p := range topic.Partitions {
+				for _, replica := range p.Replicas {
+					if replica.ID == b.ID {
+						brokerPartitions++
+					}
+				}
+				if p.Leader.ID == b.ID {
+					brokerLeaders++
+				}
+			}
+		}
+
+		brokers = append(brokers, BrokerInfo{
+			ID:               b.ID,
+			Host:             b.Host,
+			Port:             b.Port,
+			Rack:             nil,                      // Can be populated if b.Rack is used
+			DiskUsage:        "6.37 KB, 59 segment(s)", // Mock for now
+			PartitionsSkew:   "-",
+			Leaders:          brokerLeaders,
+			LeaderSkew:       "0.00%",
+			OnlinePartitions: brokerPartitions,
+			IsController:     isController,
 		})
 	}
 
 	return &BrokersResponse{
+		Brokers:                       brokers,
 		BrokerCount:                   len(resp.Brokers),
 		ZooKeeperStatus:               nil,
 		ActiveControllers:             activeControllers,
@@ -187,7 +218,6 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		InSyncReplicasCount:           isrCount,
 		OutOfSyncReplicasCount:        osrCount,
 		UnderReplicatedPartitionCount: underReplicated,
-		DiskUsage:                     diskUsages,
 		Version:                       "1.0-UNKNOWN",
 	}, nil
 }
