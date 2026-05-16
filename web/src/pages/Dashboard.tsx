@@ -1,7 +1,5 @@
-import React, { useEffect, useState, useMemo } from 'react';
-import Layout from '../components/Layout';
-
-import { useNavigate } from 'react-router-dom';
+import React, { useMemo, useState } from 'react';
+import { useOutletContext } from 'react-router-dom';
 
 interface Cluster {
   name: string;
@@ -19,40 +17,8 @@ type SortConfig = {
 } | null;
 
 const Dashboard: React.FC = () => {
-  const navigate = useNavigate();
-  const [clusters, setClusters] = useState<Cluster[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { clusters } = useOutletContext<{ clusters: Cluster[] }>();
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
-
-  useEffect(() => {
-    const fetchClusters = async () => {
-      const token = localStorage.getItem('token');
-      try {
-        const response = await fetch('/api/v1/clusters', {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-          },
-        });
-
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/login');
-          return;
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          setClusters(data);
-        }
-      } catch (err) {
-        console.error('Failed to fetch clusters', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchClusters();
-  }, [navigate]);
 
   const sortedClusters = useMemo(() => {
     const sortableItems = [...clusters];
@@ -96,16 +62,8 @@ const Dashboard: React.FC = () => {
   const onlineCount = clusters.filter(c => c.status === 'online').length;
   const offlineCount = clusters.filter(c => c.status !== 'online').length;
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-      </div>
-    );
-  }
-
   return (
-    <Layout clusters={clusters}>
+    <>
       <h1 className="text-2xl font-semibold text-slate-800 mb-6">Dashboard</h1>
 
       {/* Status Cards */}
@@ -191,7 +149,7 @@ const Dashboard: React.FC = () => {
           </tbody>
         </table>
       </div>
-    </Layout>
+    </>
   );
 };
 

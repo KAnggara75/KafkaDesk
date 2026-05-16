@@ -1,12 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation, Link } from 'react-router-dom';
+import { useNavigate, useLocation, Link, Outlet } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleUp } from '@fortawesome/free-regular-svg-icons';
-
-interface LayoutProps {
-  children: React.ReactNode;
-  clusters: any[];
-}
 
 interface InfoResponse {
   build: {
@@ -22,26 +17,56 @@ interface InfoResponse {
   } | null;
 }
 
-const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
+const Layout: React.FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
   const [info, setInfo] = useState<InfoResponse | null>(null);
+  const [clusters, setClusters] = useState<any[]>([]);
 
   useEffect(() => {
-    const fetchInfo = async () => {
+    const fetchData = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+
       try {
-        const response = await fetch('/api/v1/info');
-        if (response.ok) {
-          const data = await response.json();
-          setInfo(data);
+        const [infoRes, clustersRes] = await Promise.all([
+          fetch('/api/v1/info', { headers: { 'Authorization': `Bearer ${token}` } }),
+          fetch('/api/v1/clusters', { headers: { 'Authorization': `Bearer ${token}` } })
+        ]);
+
+        if (infoRes.status === 401 || clustersRes.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
         }
+
+        if (infoRes.ok) setInfo(await infoRes.json());
+        if (clustersRes.ok) setClusters(await clustersRes.json());
       } catch (err) {
-        console.error('Failed to fetch system info', err);
+        console.error('Failed to fetch layout data', err);
       }
     };
-    fetchInfo();
-  }, []);
+
+    fetchData();
+  }, [navigate]);
+
+  const handleLogout = async () => {
+    const token = localStorage.getItem('token');
+    try {
+      await fetch('/api/v1/logout', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+    } catch (err) {
+      console.error('Logout failed', err);
+    }
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
 
   const toggleCluster = (name: string) => {
     setExpandedClusters(prev => ({
@@ -50,46 +75,24 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
     }));
   };
 
-  const handleLogout = async () => {
-    const token = localStorage.getItem('token');
-    if (!token) return;
-
-    try {
-      const response = await fetch('/api/v1/logout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ token }),
-      });
-
-      if (response.status === 204) {
-        localStorage.removeItem('token');
-        navigate('/login');
-      }
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
-  };
-
   return (
     <div className="bg-gray-50 font-sans text-slate-900 overflow-x-hidden min-h-screen">
       {/* Header */}
       <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-50">
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
+          <Link to="/" className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-indigo-600 rounded-sm flex items-center justify-center">
               <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
                 <path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"></path>
               </svg>
             </div>
             <span className="font-semibold text-sm tracking-tight text-slate-800">KafkaDesk</span>
-          </div>
+          </Link>
           <div className="flex items-center space-x-2 text-xs text-slate-400">
             {info && (
               <div className="flex items-center space-x-1">
-                <span className="text-indigo-500 font-medium">{info.build.commitId}</span>
-                <span>{info.build.version}</span>
+                <span className="text-indigo-500 font-medium">{info.build.commitId.substring(0, 7)}</span>
+                <span>v{info.build.version}</span>
                 {(!info.build.isLatestRelease && info.latestRelease) && (
                   <a
                     href={info.latestRelease.htmlUrl}
@@ -167,7 +170,7 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
 
         {/* Main Content */}
         <main className="flex-1 p-6">
-          {children}
+          <Outlet context={{ clusters }} />
         </main>
       </div>
     </div>
