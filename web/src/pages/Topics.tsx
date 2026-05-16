@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 interface Topic {
 	name: string;
@@ -170,17 +171,13 @@ const Topics: React.FC = () => {
 	const isAnySelected = selectedTopics.size > 0;
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center min-h-[60vh]">
-				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-			</div>
-		);
+		return <LoadingScreen />;
 	}
 
 	return (
-		<div className="max-w-[1600px] mx-auto pb-20 transition-colors duration-300">
-			<header className="flex items-center justify-between mb-8">
-				<h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors duration-300">Topics</h1>
+		<div className="mx-auto pb-20 transition-colors duration-300">
+			<header className="flex items-center justify-between mb-4">
+				<h1 className="text-xl ml-4 mt-4 text-slate-900 dark:text-slate-100 transition-colors duration-300">Topics</h1>
 				<button className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm">
 					<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 						<path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
@@ -193,7 +190,7 @@ const Topics: React.FC = () => {
 			<div className="mb-6 space-y-4">
 				<div className="flex items-center space-x-4">
 					{/* Search Bar */}
-					<div className="relative flex-1 max-w-lg">
+					<div className="relative flex-1 max-w-2xl ml-6">
 						<span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 							<svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
@@ -233,21 +230,21 @@ const Topics: React.FC = () => {
 				</div>
 
 				{/* Action Buttons */}
-				<div className="flex space-x-2">
+				<div className="flex space-x-2 ml-6">
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'border-gray-100 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
 						disabled={!isAnySelected}
 					>
 						Delete selected topics ({selectedTopics.size})
 					</button>
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30' : 'border-gray-100 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
 						disabled={selectedTopics.size !== 1}
 					>
 						Copy selected topic
 					</button>
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'border-gray-100 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
 						disabled={!isAnySelected}
 					>
 						Purge messages
@@ -256,7 +253,7 @@ const Topics: React.FC = () => {
 			</div>
 
 			{/* Topics Table */}
-			<div className="bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm transition-colors duration-300">
+			<div className="bg-white dark:bg-dark border-gray-200 dark:border-darklight border-dark shadow-sm transition-colors duration-300">
 				<table className="min-w-full divide-y divide-gray-200 dark:divide-darklight">
 					<thead className="bg-gray-50 dark:bg-dark/50">
 						<tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">

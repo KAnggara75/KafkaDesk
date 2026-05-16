@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUp19, faArrowDown19, faUpDown } from '@fortawesome/free-solid-svg-icons';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 interface Broker {
 	id: number;
@@ -171,17 +172,13 @@ const Brokers: React.FC = () => {
 	};
 
 	if (loading) {
-		return (
-			<div className="flex items-center justify-center min-[60vh]">
-				<div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
-			</div>
-		);
+		return <LoadingScreen />;
 	}
 
 	return (
 		<div className="mx-auto transition-colors duration-300">
-			<div className="flex items-center justify-between mb-6">
-				<h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors duration-300">Brokers</h1>
+			<div className="flex items-center justify-between m-4">
+				<h1 className="text-xl text-slate-900 dark:text-slate-100 transition-colors duration-300">Brokers</h1>
 				<button
 					onClick={() => fetchData(true)}
 					className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
@@ -196,9 +193,9 @@ const Brokers: React.FC = () => {
 			{/* Metrics Grid */}
 			<div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
 				{/* Uptime Group */}
-				<div>
+				<div className="ml-8">
 					<h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-3 transition-colors duration-300">Uptime</h3>
-					<div className="flex bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm divide-x divide-gray-100 dark:divide-darklight overflow-hidden h-24 transition-colors duration-300">
+					<div className="flex bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm divide-x divide-gray-100 dark:divide-darklight overflow-hidden h-16 transition-colors duration-300">
 						<div className="flex-1 flex flex-col justify-center px-6">
 							<span className="text-xs text-gray-400 dark:text-slate-500 font-medium">Broker Count</span>
 							<span className="text-lg font-semibold text-dark dark:text-slate-100">{metrics?.brokerCount}</span>
@@ -215,9 +212,9 @@ const Brokers: React.FC = () => {
 				</div>
 
 				{/* Partitions Group */}
-				<div>
-					<h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-3 transition-colors duration-300">Partitions</h3>
-					<div className="flex bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm divide-x divide-gray-100 dark:divide-darklight overflow-hidden h-24 transition-colors duration-300">
+				<div className='mr-8'>
+					<h3 className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-3  transition-colors duration-300">Partitions</h3>
+					<div className="flex bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm divide-x divide-gray-100 dark:divide-darklight overflow-hidden h-16 transition-colors duration-300">
 						<div className="flex-1 flex flex-col justify-center px-6">
 							<div className="flex items-center space-x-1">
 								<span className="text-xs text-gray-400 dark:text-slate-500 font-medium">Online</span>
@@ -254,7 +251,7 @@ const Brokers: React.FC = () => {
 			</div>
 
 			{/* Brokers Table */}
-			<div className="bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm overflow-hidden transition-colors duration-300">
+			<div className="bg-white dark:bg-dark border-gray-200 dark:border-darklight shadow-sm overflow-hidden transition-colors duration-300">
 				<table className="w-full text-left text-sm border-collapse">
 					<thead>
 						<tr className="bg-white dark:bg-dark border-b border-gray-100 dark:border-darklight text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider select-none">

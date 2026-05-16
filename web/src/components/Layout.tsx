@@ -221,7 +221,7 @@ const Layout: React.FC = () => {
 				</aside>
 
 				{/* Main Content */}
-				<main className="flex-1 p-2 dark:bg-dark">
+				<main className="flex-1 dark:bg-dark">
 					<Outlet context={{ clusters }} />
 				</main>
 			</div>
