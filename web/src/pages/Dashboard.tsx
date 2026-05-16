@@ -82,15 +82,18 @@ const Dashboard: React.FC = () => {
 			<div className="flex items-center justify-between m-4 mb-2">
 				<h1 className="text-xl text-dark dark:text-slate-100 transition-colors duration-300 select-none">Dashboard</h1>
 				<div className="flex items-center space-x-4">
-					<label className="flex items-center space-x-2 cursor-pointer select-none">
-						<input
-							type="checkbox"
-							className="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-							checked={showOnlyOffline}
-							onChange={(e) => setShowOnlyOffline(e.target.checked)}
-						/>
-						<span className="text-sm font-medium text-slate-600 dark:text-slate-400">Only offline clusters</span>
-					</label>
+					<div className="flex items-center space-x-3">
+						<label className="relative inline-flex items-center cursor-pointer select-none">
+							<input
+								type="checkbox"
+								className="sr-only peer"
+								checked={showOnlyOffline}
+								onChange={(e) => setShowOnlyOffline(e.target.checked)}
+							/>
+							<div className="w-11 h-6 bg-gray-200 dark:bg-darklight peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
+						</label>
+						<span className="text-sm font-medium text-slate-600 dark:text-slate-400 select-none">Only offline clusters</span>
+					</div>
 				</div>
 			</div>
 
