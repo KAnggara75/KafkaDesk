@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
@@ -42,34 +42,40 @@ const Topics: React.FC = () => {
 		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, [activeDropdown]);
 
-	useEffect(() => {
-		const fetchData = async () => {
-			setLoading(true);
-			const token = localStorage.getItem('token');
-			try {
-				const res = await fetch(`/api/v1/clusters/${clusterName}/topics`, {
-					headers: { 'Authorization': `Bearer ${token}` }
-				});
+	const fetchData = useCallback(async (silent = false) => {
+		if (!silent) setLoading(true);
+		const token = localStorage.getItem('token');
+		try {
+			const res = await fetch(`/api/v1/clusters/${clusterName}/topics`, {
+				headers: { 'Authorization': `Bearer ${token}` }
+			});
 
-				if (res.status === 401) {
-					localStorage.removeItem('token');
-					navigate('/login');
-					return;
-				}
-
-				if (res.ok) {
-					const data = await res.json();
-					setTopics(data.topics || []);
-				}
-			} catch (err) {
-				console.error('Failed to fetch topics', err);
-			} finally {
-				setLoading(false);
+			if (res.status === 401) {
+				localStorage.removeItem('token');
+				navigate('/login');
+				return;
 			}
-		};
 
-		fetchData();
+			if (res.ok) {
+				const data = await res.json();
+				setTopics(data.topics || []);
+			}
+		} catch (err) {
+			console.error('Failed to fetch topics', err);
+		} finally {
+			if (!silent) setLoading(false);
+		}
 	}, [clusterName, navigate]);
+
+	useEffect(() => {
+		fetchData();
+
+		const interval = setInterval(() => {
+			fetchData(true);
+		}, 10000);
+
+		return () => clearInterval(interval);
+	}, [fetchData]);
 
 	const requestSort = (key: keyof Topic) => {
 		let direction: 'asc' | 'desc' = 'asc';
