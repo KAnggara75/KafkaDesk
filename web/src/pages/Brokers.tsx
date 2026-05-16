@@ -50,7 +50,7 @@ const Brokers: React.FC = () => {
 	const [metrics, setMetrics] = useState<BrokerMetrics | null>(null);
 	const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'id', direction: 'asc' });
 
-	const fetchData = useCallback(async (force = false) => {
+	const fetchData = useCallback(async (force = false, silent = false) => {
 		if (!clusterName) return;
 
 		const now = Date.now();
@@ -58,11 +58,11 @@ const Brokers: React.FC = () => {
 		if (!force && cached && (now - cached.timestamp < CACHE_TTL)) {
 			setBrokers(cached.brokers);
 			setMetrics(cached.metrics);
-			setLoading(false);
+			if (!silent) setLoading(false);
 			return;
 		}
 
-		setLoading(true);
+		if (!silent) setLoading(true);
 		const token = localStorage.getItem('token');
 		try {
 			const brokersRes = await fetch(`/api/v1/clusters/${clusterName}/brokers`, {
@@ -110,6 +110,12 @@ const Brokers: React.FC = () => {
 
 	useEffect(() => {
 		fetchData();
+
+		const interval = setInterval(() => {
+			fetchData(true, true);
+		}, 10000);
+
+		return () => clearInterval(interval);
 	}, [fetchData]);
 
 	const sortedBrokers = useMemo(() => {
@@ -173,7 +179,7 @@ const Brokers: React.FC = () => {
 	}
 
 	return (
-		<div className="max-w-[1600px] mx-auto transition-colors duration-300">
+		<div className="mx-auto transition-colors duration-300">
 			<div className="flex items-center justify-between mb-6">
 				<h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors duration-300">Brokers</h1>
 				<button
