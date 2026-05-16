@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 
+import { useNavigate } from 'react-router-dom';
+
 interface Cluster {
   name: string;
   status: string;
@@ -17,6 +19,7 @@ type SortConfig = {
 } | null;
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
@@ -30,6 +33,13 @@ const Dashboard: React.FC = () => {
             'Authorization': `Bearer ${token}`,
           },
         });
+
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/login');
+          return;
+        }
+
         if (response.ok) {
           const data = await response.json();
           setClusters(data);
@@ -42,7 +52,7 @@ const Dashboard: React.FC = () => {
     };
 
     fetchClusters();
-  }, []);
+  }, [navigate]);
 
   const sortedClusters = useMemo(() => {
     const sortableItems = [...clusters];
