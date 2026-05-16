@@ -3,6 +3,7 @@ package main
 import (
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/joho/godotenv"
@@ -16,17 +17,28 @@ import (
 )
 
 func main() {
-	// Configure zerolog
-	zerolog.SetGlobalLevel(zerolog.DebugLevel)
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		// Just warn, as env vars might be set in the system/docker
+	}
+
+	// Configure zerolog level from ENV
+	logLevel := strings.ToLower(os.Getenv("LOG_LEVEL"))
+	level := zerolog.DebugLevel
+	switch logLevel {
+	case "info":
+		level = zerolog.InfoLevel
+	case "warn":
+		level = zerolog.WarnLevel
+	case "error":
+		level = zerolog.ErrorLevel
+	}
+	zerolog.SetGlobalLevel(level)
+
 	zerolog.TimeFieldFormat = time.RFC3339
 	log.Logger = log.Output(os.Stdout).With().
 		Str("service", "KafkaDesk").
 		Logger()
-
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		log.Warn().Err(err).Msg("Failed to load .env file")
-	}
 
 	cfg := config.LoadConfig()
 
@@ -46,7 +58,7 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	log.Info().Msg("KafkaDesk Server is running on :8080...")
+	log.Info().Stringer("level", level).Msg("KafkaDesk Server is running on :8080...")
 	if err := server.ListenAndServe(); err != nil {
 		log.Fatal().Err(err).Msg("Server failed")
 	}
