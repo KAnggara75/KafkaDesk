@@ -1,5 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
 
 interface Cluster {
   name: string;
@@ -52,11 +54,18 @@ const Dashboard: React.FC = () => {
 
   const getSortIcon = (key: keyof Cluster) => {
     const isActive = sortConfig?.key === key;
-    return (
-      <svg className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-      </svg>
-    );
+    if (!isActive) {
+      return <FontAwesomeIcon icon={faUpDown} className="w-3 h-3 text-slate-300 opacity-50" />;
+    }
+
+    let icon;
+    if (key === 'name' || key === 'status' || key === 'version') {
+      icon = sortConfig.direction === 'asc' ? faArrowUpAZ : faArrowDownZA;
+    } else {
+      icon = sortConfig.direction === 'asc' ? faArrowUp19 : faArrowDown91;
+    }
+
+    return <FontAwesomeIcon icon={icon} className="w-3 h-3 text-indigo-600" />;
   };
 
   const onlineCount = clusters.filter(c => c.status === 'online').length;
@@ -79,7 +88,7 @@ const Dashboard: React.FC = () => {
         </div>
         <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 w-40 shadow-sm flex flex-col justify-between transition-colors duration-300">
           <div className="mb-2">
-            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">Offline</span>
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400">Offline</span>
           </div>
           <div className="flex items-baseline">
             <span className="text-xl font-semibold text-slate-800 dark:text-slate-100">{offlineCount}</span>
@@ -93,37 +102,37 @@ const Dashboard: React.FC = () => {
         <table className="w-full text-left border-collapse">
           <thead className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-xs">
             <tr>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('name')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 select-none" onClick={() => requestSort('name')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('name')}
                   <span>Cluster name</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('version')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 select-none" onClick={() => requestSort('version')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('version')}
                   <span>Version</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('brokerCount')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 select-none" onClick={() => requestSort('brokerCount')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('brokerCount')}
                   <span>Brokers count</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('onlinePartitionCount')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 select-none" onClick={() => requestSort('onlinePartitionCount')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('onlinePartitionCount')}
                   <span>Partitions</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('topicCount')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50 select-none" onClick={() => requestSort('topicCount')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('topicCount')}
                   <span>Topics</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => requestSort('status')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700 select-none" onClick={() => requestSort('status')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('status')}
                   <span>Status</span>
