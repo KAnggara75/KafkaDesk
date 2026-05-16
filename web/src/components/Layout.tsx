@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleUp } from '@fortawesome/free-regular-svg-icons';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -82,17 +84,26 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
             </div>
             <span className="font-semibold text-sm tracking-tight text-slate-800">KafkaDesk</span>
           </div>
-          <div className="flex items-center space-x-1 text-xs text-slate-400">
+          <div className="flex items-center space-x-2 text-xs text-slate-400">
             {info && (
-              <>
+              <div className="flex items-center space-x-1">
                 <span className="text-indigo-500 font-medium">{info.build.commitId}</span>
                 <span>{info.build.version}</span>
-              </>
+                {(!info.build.isLatestRelease && info.latestRelease) && (
+                  <a
+                    href={info.latestRelease.htmlUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-1 text-amber-500 hover:text-amber-600 transition-colors animate-pulse"
+                    title={`Update available: ${info.latestRelease.versionTag}`}
+                  >
+                    <FontAwesomeIcon icon={faCircleUp} />
+                  </a>
+                )}
+              </div>
             )}
             {!info && (
-              <>
-                <span className="text-indigo-500 font-medium">Loading...</span>
-              </>
+              <span className="text-indigo-500 font-medium">Loading...</span>
             )}
           </div>
         </div>
