@@ -153,7 +153,7 @@ const Topics: React.FC = () => {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto">
+    <div className="max-w-[1600px] mx-auto pb-20">
       <header className="flex items-center justify-between mb-8">
         <h1 className="text-2xl font-bold text-slate-900">Topics</h1>
         <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 transition-colors shadow-sm">
@@ -231,7 +231,7 @@ const Topics: React.FC = () => {
       </div>
 
       {/* Topics Table */}
-      <div className="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm">
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
