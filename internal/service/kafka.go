@@ -34,34 +34,21 @@ type ClusterResponse struct {
 }
 
 type BrokerInfo struct {
-	ID               int     `json:"id"`
-	Host             string  `json:"host"`
-	Port             int     `json:"port"`
-	Rack             *string `json:"rack"`
-	DiskUsage        string  `json:"diskUsage"`
-	PartitionsSkew   string  `json:"partitionsSkew"`
-	Leaders          int     `json:"leaders"`
-	LeaderSkew       string  `json:"leaderSkew"`
-	OnlinePartitions int     `json:"onlinePartitions"`
-	IsController     bool    `json:"isController"`
-}
-
-type BrokersResponse struct {
-	Brokers                       []BrokerInfo `json:"brokers"`
-	BrokerCount                   int          `json:"brokerCount"`
-	ZooKeeperStatus               *string      `json:"zooKeeperStatus"`
-	ActiveControllers             int          `json:"activeControllers"`
-	OnlinePartitionCount          int          `json:"onlinePartitionCount"`
-	OfflinePartitionCount         int          `json:"offlinePartitionCount"`
-	InSyncReplicasCount           int          `json:"inSyncReplicasCount"`
-	OutOfSyncReplicasCount        int          `json:"outOfSyncReplicasCount"`
-	UnderReplicatedPartitionCount int          `json:"underReplicatedPartitionCount"`
-	Version                       string       `json:"version"`
+	ID               int      `json:"id"`
+	Host             string   `json:"host"`
+	Port             int      `json:"port"`
+	BytesInPerSec    *float64 `json:"bytesInPerSec"`
+	BytesOutPerSec   *float64 `json:"bytesOutPerSec"`
+	PartitionsLeader int      `json:"partitionsLeader"`
+	Partitions       int      `json:"partitions"`
+	InSyncPartitions int      `json:"inSyncPartitions"`
+	PartitionsSkew   float64  `json:"partitionsSkew"`
+	LeadersSkew      float64  `json:"leadersSkew"`
 }
 
 type KafkaService interface {
 	GetClusters() []ClusterResponse
-	GetBrokersData(clusterName string) (*BrokersResponse, error)
+	GetBrokersData(clusterName string) ([]BrokerInfo, error)
 }
 
 type kafkaService struct {
@@ -83,7 +70,7 @@ func (s *kafkaService) GetClusters() []ClusterResponse {
 	return responses
 }
 
-func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, error) {
+func (s *kafkaService) GetBrokersData(clusterName string) ([]BrokerInfo, error) {
 	var clusterCfg *config.KafkaClusterConfig
 	for _, c := range s.cfg.KafkaClusters {
 		if c.Name == clusterName {
@@ -144,48 +131,23 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		return nil, err
 	}
 
-	onlinePartitions := 0
-	offlinePartitions := 0
-	isrCount := 0
-	osrCount := 0
-	underReplicated := 0
-	activeControllers := 0
-
-	for _, broker := range resp.Brokers {
-		if broker.ID == resp.Controller.ID {
-			activeControllers = 1
-		}
-	}
-
-	for _, topic := range resp.Topics {
-		for _, p := range topic.Partitions {
-			if p.Error == nil {
-				onlinePartitions++
-			} else {
-				offlinePartitions++
-			}
-
-			isrCount += len(p.Isr)
-			osrCount += len(p.Replicas) - len(p.Isr)
-
-			if len(p.Isr) < len(p.Replicas) {
-				underReplicated++
-			}
-		}
-	}
-
 	brokers := make([]BrokerInfo, 0)
 	for _, b := range resp.Brokers {
-		isController := b.ID == resp.Controller.ID
-
-		// Calculate partitions for this broker
 		brokerPartitions := 0
 		brokerLeaders := 0
+		inSyncPartitions := 0
 		for _, topic := range resp.Topics {
 			for _, p := range topic.Partitions {
 				for _, replica := range p.Replicas {
 					if replica.ID == b.ID {
 						brokerPartitions++
+						// Check if this broker is in ISR for this partition
+						for _, isr := range p.Isr {
+							if isr.ID == b.ID {
+								inSyncPartitions++
+								break
+							}
+						}
 					}
 				}
 				if p.Leader.ID == b.ID {
@@ -198,28 +160,17 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 			ID:               b.ID,
 			Host:             b.Host,
 			Port:             b.Port,
-			Rack:             nil,                      // Can be populated if b.Rack is used
-			DiskUsage:        "6.37 KB, 59 segment(s)", // Mock for now
-			PartitionsSkew:   "-",
-			Leaders:          brokerLeaders,
-			LeaderSkew:       "0.00%",
-			OnlinePartitions: brokerPartitions,
-			IsController:     isController,
+			BytesInPerSec:    nil,
+			BytesOutPerSec:   nil,
+			PartitionsLeader: brokerLeaders,
+			Partitions:       brokerPartitions,
+			InSyncPartitions: inSyncPartitions,
+			PartitionsSkew:   0.0,
+			LeadersSkew:      0.0,
 		})
 	}
 
-	return &BrokersResponse{
-		Brokers:                       brokers,
-		BrokerCount:                   len(resp.Brokers),
-		ZooKeeperStatus:               nil,
-		ActiveControllers:             activeControllers,
-		OnlinePartitionCount:          onlinePartitions,
-		OfflinePartitionCount:         offlinePartitions,
-		InSyncReplicasCount:           isrCount,
-		OutOfSyncReplicasCount:        osrCount,
-		UnderReplicatedPartitionCount: underReplicated,
-		Version:                       "1.0-UNKNOWN",
-	}, nil
+	return brokers, nil
 }
 
 func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) ClusterResponse {
