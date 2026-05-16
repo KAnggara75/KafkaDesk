@@ -291,12 +291,12 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 
 	topics := make([]TopicInfo, 0, len(resp.Topics))
 	for _, topic := range resp.Topics {
-		pInfos := make([]PartitionInfo, 0, len(topic.Partitions))
+		pInfos := make([]PartitionInfo, len(topic.Partitions))
 		totalReplicas := 0
 		totalIsr := 0
 		underReplicated := 0
 
-		for _, p := range topic.Partitions {
+		for i, p := range topic.Partitions {
 			replicas := make([]ReplicaInfo, 0, len(p.Replicas))
 			for _, r := range p.Replicas {
 				isInSync := false
@@ -319,24 +319,36 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 				underReplicated++
 			}
 
-			var offsetMax, offsetMin int64
-			conn, err := dialer.DialLeader(ctx, "tcp", clusterCfg.BootstrapServers, topic.Name, p.ID)
-			if err == nil {
-				offsetMin, _ = conn.ReadFirstOffset()
-				offsetMax, _ = conn.ReadLastOffset()
-				conn.Close() // #nosec G104
-			} else {
-				log.Debug().Err(err).Str("topic", topic.Name).Int("partition", p.ID).Msg("Failed to dial partition leader")
-			}
-
-			pInfos = append(pInfos, PartitionInfo{
+			pInfos[i] = PartitionInfo{
 				Partition: p.ID,
 				Leader:    p.Leader.ID,
 				Replicas:  replicas,
-				OffsetMax: offsetMax,
-				OffsetMin: offsetMin,
-			})
+			}
 		}
+
+		// Fetch offsets concurrently
+		var pWg sync.WaitGroup
+		sem := make(chan struct{}, 50)
+		for i := range topic.Partitions {
+			pWg.Add(1)
+			go func(idx int, pName string, pID int) {
+				defer pWg.Done()
+				sem <- struct{}{}
+				defer func() { <-sem }()
+
+				conn, err := dialer.DialLeader(ctx, "tcp", clusterCfg.BootstrapServers, pName, pID)
+				if err == nil {
+					offMin, _ := conn.ReadFirstOffset()
+					offMax, _ := conn.ReadLastOffset()
+					conn.Close() // #nosec G104
+
+					// Update pInfos safely since each goroutine writes to a unique index
+					pInfos[idx].OffsetMax = offMax
+					pInfos[idx].OffsetMin = offMin
+				}
+			}(i, topic.Name, topic.Partitions[i].ID)
+		}
+		pWg.Wait()
 
 		totalOffsetMax := int64(0)
 		for _, pi := range pInfos {
