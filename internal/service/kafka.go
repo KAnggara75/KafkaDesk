@@ -42,13 +42,33 @@ type BrokerInfo struct {
 	PartitionsLeader int      `json:"partitionsLeader"`
 	Partitions       int      `json:"partitions"`
 	InSyncPartitions int      `json:"inSyncPartitions"`
-	PartitionsSkew   float64  `json:"partitionsSkew"`
-	LeadersSkew      float64  `json:"leadersSkew"`
+	PartitionsSkew   *float64 `json:"partitionsSkew"`
+	LeadersSkew      *float64 `json:"leadersSkew"`
+}
+
+type BrokersResponse struct {
+	BrokerCount                   int          `json:"brokerCount"`
+	ZooKeeperStatus               *string      `json:"zooKeeperStatus"`
+	ActiveControllers             int          `json:"activeControllers"`
+	OnlinePartitionCount          int          `json:"onlinePartitionCount"`
+	OfflinePartitionCount         int          `json:"offlinePartitionCount"`
+	InSyncReplicasCount           int          `json:"inSyncReplicasCount"`
+	OutOfSyncReplicasCount        int          `json:"outOfSyncReplicasCount"`
+	UnderReplicatedPartitionCount int          `json:"underReplicatedPartitionCount"`
+	DiskUsage                     []DiskUsage  `json:"diskUsage"`
+	Version                       string       `json:"version"`
+	Brokers                       []BrokerInfo `json:"brokers"`
+}
+
+type DiskUsage struct {
+	BrokerId     int   `json:"brokerId"`
+	SegmentSize  int64 `json:"segmentSize"`
+	SegmentCount int   `json:"segmentCount"`
 }
 
 type KafkaService interface {
 	GetClusters() []ClusterResponse
-	GetBrokersData(clusterName string) ([]BrokerInfo, error)
+	GetBrokersData(clusterName string) (*BrokersResponse, error)
 }
 
 type kafkaService struct {
@@ -70,7 +90,7 @@ func (s *kafkaService) GetClusters() []ClusterResponse {
 	return responses
 }
 
-func (s *kafkaService) GetBrokersData(clusterName string) ([]BrokerInfo, error) {
+func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, error) {
 	var clusterCfg *config.KafkaClusterConfig
 	for _, c := range s.cfg.KafkaClusters {
 		if c.Name == clusterName {
@@ -131,7 +151,36 @@ func (s *kafkaService) GetBrokersData(clusterName string) ([]BrokerInfo, error) 
 		return nil, err
 	}
 
+	onlinePartitions := 0
+	offlinePartitions := 0
+	isrCount := 0
+	osrCount := 0
+	underReplicated := 0
+	activeControllers := 0
+
+	if resp.Controller.ID != -1 {
+		activeControllers = 1
+	}
+
+	for _, topic := range resp.Topics {
+		for _, p := range topic.Partitions {
+			if p.Error == nil {
+				onlinePartitions++
+			} else {
+				offlinePartitions++
+			}
+
+			isrCount += len(p.Isr)
+			osrCount += len(p.Replicas) - len(p.Isr)
+
+			if len(p.Isr) < len(p.Replicas) {
+				underReplicated++
+			}
+		}
+	}
+
 	brokers := make([]BrokerInfo, 0)
+	diskUsage := make([]DiskUsage, 0)
 	for _, b := range resp.Brokers {
 		brokerPartitions := 0
 		brokerLeaders := 0
@@ -141,7 +190,6 @@ func (s *kafkaService) GetBrokersData(clusterName string) ([]BrokerInfo, error) 
 				for _, replica := range p.Replicas {
 					if replica.ID == b.ID {
 						brokerPartitions++
-						// Check if this broker is in ISR for this partition
 						for _, isr := range p.Isr {
 							if isr.ID == b.ID {
 								inSyncPartitions++
@@ -165,12 +213,30 @@ func (s *kafkaService) GetBrokersData(clusterName string) ([]BrokerInfo, error) 
 			PartitionsLeader: brokerLeaders,
 			Partitions:       brokerPartitions,
 			InSyncPartitions: inSyncPartitions,
-			PartitionsSkew:   0.0,
-			LeadersSkew:      0.0,
+			PartitionsSkew:   nil,
+			LeadersSkew:      nil,
+		})
+
+		diskUsage = append(diskUsage, DiskUsage{
+			BrokerId:     b.ID,
+			SegmentSize:  0,
+			SegmentCount: brokerPartitions,
 		})
 	}
 
-	return brokers, nil
+	return &BrokersResponse{
+		BrokerCount:                   len(resp.Brokers),
+		ZooKeeperStatus:               nil,
+		ActiveControllers:             activeControllers,
+		OnlinePartitionCount:          onlinePartitions,
+		OfflinePartitionCount:         offlinePartitions,
+		InSyncReplicasCount:           isrCount,
+		OutOfSyncReplicasCount:        osrCount,
+		UnderReplicatedPartitionCount: underReplicated,
+		DiskUsage:                     diskUsage,
+		Version:                       "1.0-UNKNOWN",
+		Brokers:                       brokers,
+	}, nil
 }
 
 func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) ClusterResponse {

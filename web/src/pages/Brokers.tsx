@@ -11,8 +11,8 @@ interface Broker {
   partitionsLeader: number;
   partitions: number;
   inSyncPartitions: number;
-  partitionsSkew: number;
-  leadersSkew: number;
+  partitionsSkew: number | null;
+  leadersSkew: number | null;
 }
 
 interface BrokerMetrics {
@@ -60,23 +60,18 @@ const Brokers: React.FC = () => {
 
         if (brokersRes.ok) {
           const brokersData = await brokersRes.json();
-          setBrokers(brokersData);
-
-          // Calculate metrics from the array
-          const brokerCount = brokersData.length;
-          const onlinePartitions = brokersData.reduce((acc: number, b: any) => acc + b.partitions, 0);
-          const inSyncReplicas = brokersData.reduce((acc: number, b: any) => acc + b.inSyncPartitions, 0);
+          setBrokers(brokersData.brokers);
 
           setMetrics({
-            brokerCount: brokerCount,
-            activeControllerId: 1, // Mock or find if possible
-            version: '1.0-UNKNOWN',
-            onlinePartitions: onlinePartitions,
-            totalPartitions: onlinePartitions, // Mock
-            urp: 0,
-            inSyncReplicas: inSyncReplicas,
-            totalReplicas: inSyncReplicas, // Mock
-            outOfSyncReplicas: 0
+            brokerCount: brokersData.brokerCount,
+            activeControllerId: 1, // API should probably provide this ID if possible
+            version: brokersData.version,
+            onlinePartitions: brokersData.onlinePartitionCount,
+            totalPartitions: brokersData.onlinePartitionCount + brokersData.offlinePartitionCount,
+            urp: brokersData.underReplicatedPartitionCount,
+            inSyncReplicas: brokersData.inSyncReplicasCount,
+            totalReplicas: brokersData.inSyncReplicasCount + brokersData.outOfSyncReplicasCount,
+            outOfSyncReplicas: brokersData.outOfSyncReplicasCount
           });
         }
 
@@ -194,8 +189,8 @@ const Brokers: React.FC = () => {
                   <td className="px-6 py-4 text-slate-600">{broker.partitions}</td>
                   <td className="px-6 py-4 text-slate-600">{broker.inSyncPartitions}</td>
                   <td className="px-6 py-4 text-slate-600">{broker.partitionsLeader}</td>
-                  <td className="px-6 py-4 text-slate-600">{broker.partitionsSkew}%</td>
-                  <td className="px-6 py-4 text-slate-600">{broker.leadersSkew}%</td>
+                  <td className="px-6 py-4 text-slate-600">{broker.partitionsSkew !== null ? `${broker.partitionsSkew}%` : '-'}</td>
+                  <td className="px-6 py-4 text-slate-600">{broker.leadersSkew !== null ? `${broker.leadersSkew}%` : '-'}</td>
                   <td className="px-6 py-4 text-slate-600 font-mono">{broker.port}</td>
                   <td className="px-6 py-4 text-slate-600 font-mono">{broker.host}</td>
                 </tr>
