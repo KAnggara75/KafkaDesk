@@ -24,7 +24,11 @@ const Layout: React.FC = () => {
   const [info, setInfo] = useState<InfoResponse | null>(null);
   const [clusters, setClusters] = useState<any[]>([]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [isDarkMode, setIsDarkMode] = useState(() => localStorage.getItem('theme') === 'dark');
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('theme');
+    if (saved) return saved === 'dark';
+    return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  });
 
   useEffect(() => {
     if (isDarkMode) {
