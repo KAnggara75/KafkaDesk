@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 interface Broker {
@@ -31,6 +31,15 @@ type SortConfig = {
   direction: 'asc' | 'desc';
 } | null;
 
+interface CacheEntry {
+  brokers: Broker[];
+  metrics: BrokerMetrics | null;
+  timestamp: number;
+}
+
+const brokersCache: Record<string, CacheEntry> = {};
+const CACHE_TTL = 60 * 1000; // 1 minute
+
 const Brokers: React.FC = () => {
   const { clusterName } = useParams<{ clusterName: string }>();
   const navigate = useNavigate();
@@ -39,47 +48,67 @@ const Brokers: React.FC = () => {
   const [metrics, setMetrics] = useState<BrokerMetrics | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'id', direction: 'asc' });
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      const token = localStorage.getItem('token');
-      try {
-        const brokersRes = await fetch(`/api/v1/clusters/${clusterName}/brokers`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
+  const fetchData = useCallback(async (force = false) => {
+    if (!clusterName) return;
 
-        if (brokersRes.status === 401) {
-          localStorage.removeItem('token');
-          navigate('/login');
-          return;
-        }
+    const now = Date.now();
+    const cached = brokersCache[clusterName];
+    if (!force && cached && (now - cached.timestamp < CACHE_TTL)) {
+      setBrokers(cached.brokers);
+      setMetrics(cached.metrics);
+      setLoading(false);
+      return;
+    }
 
-        if (brokersRes.ok) {
-          const brokersData = await brokersRes.json();
-          setBrokers(brokersData.brokers);
+    setLoading(true);
+    const token = localStorage.getItem('token');
+    try {
+      const brokersRes = await fetch(`/api/v1/clusters/${clusterName}/brokers`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
-          setMetrics({
-            brokerCount: brokersData.brokerCount,
-            activeControllerId: 1,
-            version: brokersData.version,
-            onlinePartitions: brokersData.onlinePartitionCount,
-            totalPartitions: brokersData.onlinePartitionCount + brokersData.offlinePartitionCount,
-            urp: brokersData.underReplicatedPartitionCount,
-            inSyncReplicas: brokersData.inSyncReplicasCount,
-            totalReplicas: brokersData.inSyncReplicasCount + brokersData.outOfSyncReplicasCount,
-            outOfSyncReplicas: brokersData.outOfSyncReplicasCount
-          });
-        }
-
-      } catch (err) {
-        console.error('Failed to fetch brokers data', err);
-      } finally {
-        setLoading(false);
+      if (brokersRes.status === 401) {
+        localStorage.removeItem('token');
+        navigate('/login');
+        return;
       }
-    };
 
-    fetchData();
+      if (brokersRes.ok) {
+        const brokersData = await brokersRes.json();
+        const newBrokers = brokersData.brokers;
+        const newMetrics = {
+          brokerCount: brokersData.brokerCount,
+          activeControllerId: 1,
+          version: brokersData.version,
+          onlinePartitions: brokersData.onlinePartitionCount,
+          totalPartitions: brokersData.onlinePartitionCount + brokersData.offlinePartitionCount,
+          urp: brokersData.underReplicatedPartitionCount,
+          inSyncReplicas: brokersData.inSyncReplicasCount,
+          totalReplicas: brokersData.inSyncReplicasCount + brokersData.outOfSyncReplicasCount,
+          outOfSyncReplicas: brokersData.outOfSyncReplicasCount
+        };
+
+        setBrokers(newBrokers);
+        setMetrics(newMetrics);
+
+        // Update Cache
+        brokersCache[clusterName] = {
+          brokers: newBrokers,
+          metrics: newMetrics,
+          timestamp: Date.now()
+        };
+      }
+
+    } catch (err) {
+      console.error('Failed to fetch brokers data', err);
+    } finally {
+      setLoading(false);
+    }
   }, [clusterName, navigate]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
 
   const sortedBrokers = useMemo(() => {
     const sortableItems = [...brokers];
@@ -130,7 +159,18 @@ const Brokers: React.FC = () => {
 
   return (
     <div className="max-w-[1600px] mx-auto transition-colors duration-300">
-      <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-6 transition-colors duration-300">Brokers</h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors duration-300">Brokers</h1>
+        <button
+          onClick={() => fetchData(true)}
+          className="p-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+          title="Refresh Data"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
 
       {/* Metrics Grid */}
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-6 mb-8">
