@@ -17,6 +17,7 @@ import (
 
 func main() {
 	// Configure zerolog
+	zerolog.SetGlobalLevel(zerolog.DebugLevel)
 	zerolog.TimeFieldFormat = time.RFC3339
 	log.Logger = log.Output(os.Stdout).With().
 		Str("service", "KafkaDesk").

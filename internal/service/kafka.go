@@ -110,6 +110,7 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 	}
 
 	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
+	log.Debug().Interface("metadata", resp).Msg("Kafka metadata response received")
 	if err != nil {
 		status = "offline"
 		errStr := err.Error()
