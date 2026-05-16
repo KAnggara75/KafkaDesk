@@ -61,6 +61,41 @@ type BrokersResponse struct {
 	Brokers                       []BrokerInfo `json:"brokers"`
 }
 
+type TopicListResponse struct {
+	PageCount int         `json:"pageCount"`
+	Topics    []TopicInfo `json:"topics"`
+}
+
+type TopicInfo struct {
+	Name                      string          `json:"name"`
+	Internal                  bool            `json:"internal"`
+	PartitionCount            int             `json:"partitionCount"`
+	ReplicationFactor         int             `json:"replicationFactor"`
+	Replicas                  int             `json:"replicas"`
+	InSyncReplicas            int             `json:"inSyncReplicas"`
+	SegmentSize               int64           `json:"segmentSize"`
+	SegmentCount              int             `json:"segmentCount"`
+	BytesInPerSec             *float64        `json:"bytesInPerSec"`
+	BytesOutPerSec            *float64        `json:"bytesOutPerSec"`
+	UnderReplicatedPartitions int             `json:"underReplicatedPartitions"`
+	CleanUpPolicy             string          `json:"cleanUpPolicy"`
+	Partitions                []PartitionInfo `json:"partitions"`
+}
+
+type PartitionInfo struct {
+	Partition int           `json:"partition"`
+	Leader    int           `json:"leader"`
+	Replicas  []ReplicaInfo `json:"replicas"`
+	OffsetMax int64         `json:"offsetMax"`
+	OffsetMin int64         `json:"offsetMin"`
+}
+
+type ReplicaInfo struct {
+	Broker int  `json:"broker"`
+	Leader bool `json:"leader"`
+	InSync bool `json:"inSync"`
+}
+
 type DiskUsage struct {
 	BrokerId     int   `json:"brokerId"`
 	SegmentSize  int64 `json:"segmentSize"`
@@ -70,6 +105,7 @@ type DiskUsage struct {
 type KafkaService interface {
 	GetClusters() []ClusterResponse
 	GetBrokersData(clusterName string) (*BrokersResponse, error)
+	GetTopicsData(ctx context.Context, clusterName string) (*TopicListResponse, error)
 }
 
 type metadataCache struct {
@@ -224,6 +260,91 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		DiskUsage:                     diskUsage,
 		Version:                       version,
 		Brokers:                       brokers,
+	}, nil
+}
+
+func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*TopicListResponse, error) {
+	var clusterCfg *config.KafkaClusterConfig
+	for _, c := range s.cfg.KafkaClusters {
+		if c.Name == clusterName {
+			clusterCfg = &c
+			break
+		}
+	}
+
+	if clusterCfg == nil {
+		return nil, os.ErrNotExist
+	}
+
+	resp, err := s.getMetadata(ctx, clusterCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	topics := make([]TopicInfo, 0, len(resp.Topics))
+	for _, topic := range resp.Topics {
+		pInfos := make([]PartitionInfo, 0, len(topic.Partitions))
+		totalReplicas := 0
+		totalIsr := 0
+		underReplicated := 0
+
+		for _, p := range topic.Partitions {
+			replicas := make([]ReplicaInfo, 0, len(p.Replicas))
+			for _, r := range p.Replicas {
+				isInSync := false
+				for _, isr := range p.Isr {
+					if isr.ID == r.ID {
+						isInSync = true
+						break
+					}
+				}
+				replicas = append(replicas, ReplicaInfo{
+					Broker: r.ID,
+					Leader: p.Leader.ID == r.ID,
+					InSync: isInSync,
+				})
+			}
+
+			totalReplicas += len(p.Replicas)
+			totalIsr += len(p.Isr)
+			if len(p.Isr) < len(p.Replicas) {
+				underReplicated++
+			}
+
+			pInfos = append(pInfos, PartitionInfo{
+				Partition: p.ID,
+				Leader:    p.Leader.ID,
+				Replicas:  replicas,
+				OffsetMax: 0, // Placeholder
+				OffsetMin: 0, // Placeholder
+			})
+		}
+
+		replicationFactor := 0
+		if len(topic.Partitions) > 0 {
+			replicationFactor = len(topic.Partitions[0].Replicas)
+		}
+
+		topics = append(topics, TopicInfo{
+			Name:                      topic.Name,
+			Internal:                  topic.Internal,
+			PartitionCount:            len(topic.Partitions),
+			ReplicationFactor:         replicationFactor,
+			Replicas:                  totalReplicas,
+			InSyncReplicas:            totalIsr,
+			SegmentSize:               0,             // Placeholder
+			SegmentCount:              totalReplicas, // Basic estimation
+			BytesInPerSec:             nil,           // Placeholder
+			BytesOutPerSec:            nil,           // Placeholder
+			UnderReplicatedPartitions: underReplicated,
+			CleanUpPolicy:             "COMPACT_DELETE", // Placeholder
+			Partitions:                pInfos,
+		})
+	}
+
+	return &TopicListResponse{
+		PageCount: 1,
+		Topics:    topics,
 	}, nil
 }
 

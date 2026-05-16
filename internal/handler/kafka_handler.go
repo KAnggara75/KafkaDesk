@@ -49,3 +49,21 @@ func (h *KafkaHandler) GetBrokers(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(brokersData)
 }
+
+func (h *KafkaHandler) GetTopics(w http.ResponseWriter, r *http.Request) {
+	clusterName := r.PathValue("clusterName")
+	if clusterName == "" {
+		http.Error(w, "Cluster name is required", http.StatusBadRequest)
+		return
+	}
+
+	topicsData, err := h.kafkaService.GetTopicsData(r.Context(), clusterName)
+	if err != nil {
+		log.Error().Err(err).Str("cluster", clusterName).Msg("Failed to get topics data")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_ = json.NewEncoder(w).Encode(topicsData)
+}
