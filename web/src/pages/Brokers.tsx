@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 
 interface Broker {
@@ -26,12 +26,18 @@ interface BrokerMetrics {
   outOfSyncReplicas: number;
 }
 
+type SortConfig = {
+  key: keyof Broker;
+  direction: 'asc' | 'desc';
+} | null;
+
 const Brokers: React.FC = () => {
   const { clusterName } = useParams<{ clusterName: string }>();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [brokers, setBrokers] = useState<Broker[]>([]);
   const [metrics, setMetrics] = useState<BrokerMetrics | null>(null);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'id', direction: 'asc' });
 
   useEffect(() => {
     const fetchData = async () => {
@@ -75,9 +81,48 @@ const Brokers: React.FC = () => {
     fetchData();
   }, [clusterName, navigate]);
 
+  const sortedBrokers = useMemo(() => {
+    const sortableItems = [...brokers];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+
+        if (aVal === null) return 1;
+        if (bVal === null) return -1;
+
+        if (aVal < bVal) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [brokers, sortConfig]);
+
+  const requestSort = (key: keyof Broker) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof Broker) => {
+    const isActive = sortConfig?.key === key;
+    return (
+      <svg className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+      </svg>
+    );
+  };
+
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-[60vh]">
+      <div className="flex items-center justify-center min-[60vh]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-indigo-600"></div>
       </div>
     );
@@ -151,26 +196,59 @@ const Brokers: React.FC = () => {
       <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
         <table className="w-full text-left text-sm border-collapse">
           <thead>
-            <tr className="bg-white border-b border-gray-100 text-gray-400 font-medium">
-              <th className="px-6 py-4">
-                <div className="flex items-center space-x-1 cursor-pointer">
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M7 10l5 5 5-5z"></path>
-                  </svg>
+            <tr className="bg-white border-b border-gray-100 text-slate-500 text-xs font-semibold uppercase tracking-wider">
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('id')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('id')}
                   <span>Broker ID</span>
                 </div>
               </th>
-              <th className="px-6 py-4">Partitions</th>
-              <th className="px-6 py-4">In-Sync</th>
-              <th className="px-6 py-4">Leaders</th>
-              <th className="px-6 py-4">Partitions Skew</th>
-              <th className="px-6 py-4">Leader Skew</th>
-              <th className="px-6 py-4">Port</th>
-              <th className="px-6 py-4">Host</th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('partitions')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('partitions')}
+                  <span>Partitions</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('inSyncPartitions')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('inSyncPartitions')}
+                  <span>In-Sync</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('partitionsLeader')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('partitionsLeader')}
+                  <span>Leaders</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('partitionsSkew')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('partitionsSkew')}
+                  <span>Partitions Skew</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('leadersSkew')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('leadersSkew')}
+                  <span>Leader Skew</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('port')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('port')}
+                  <span>Port</span>
+                </div>
+              </th>
+              <th className="px-6 py-4 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('host')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('host')}
+                  <span>Host</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-50">
-            {brokers.map((broker) => (
+            {sortedBrokers.map((broker) => (
               <tr key={broker.id} className="hover:bg-gray-50 transition-colors">
                 <td className="px-6 py-4">
                   <span className="font-medium text-slate-800">{broker.id}</span>
