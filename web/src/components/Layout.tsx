@@ -125,9 +125,9 @@ const Layout: React.FC = () => {
 								<path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"></path>
 							</svg>
 						</div>
-						<span className="font-semibold text-sm tracking-tight text-dark dark:text-slate-200">KafkaDesk</span>
+						<span className="font-semibold text-sm tracking-tight text-dark dark:text-slate-200 select-none">KafkaDesk</span>
 					</Link>
-					<div className="flex items-center space-x-2 text-xs text-slate-400 dark:text-slate-500">
+					<div className="flex items-center space-x-2 text-xs text-slate-400 dark:text-slate-500 select-none">
 						{info && (
 							<div className="flex items-center space-x-1">
 								<span className="text-indigo-500 font-medium">{info.build.commitId.substring(0, 7)}</span>
@@ -150,7 +150,7 @@ const Layout: React.FC = () => {
 						)}
 					</div>
 				</div>
-				<div className="flex items-center space-x-5 text-slate-500">
+				<div className="flex items-center space-x-5 text-slate-500 select-none">
 					<button
 						onClick={() => setIsDarkMode(!isDarkMode)}
 						className="p-2 hover:bg-slate-50 dark:hover:bg-darklight rounded-full transition-colors text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
@@ -173,7 +173,7 @@ const Layout: React.FC = () => {
 			<div className="flex min-h-[calc(100vh-3.5rem)] relative overflow-hidden">
 				{/* Sidebar */}
 				<aside className={`bg-white dark:bg-dark border-r border-gray-200 dark:border-darklight py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-48 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
-					<div className="w-48"> {/* Fixed width wrapper to prevent layout shift during transition */}
+					<div className="w-48 select-none"> {/* Fixed width wrapper to prevent layout shift during transition */}
 						<nav className="space-y-1">
 							<Link
 								className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-r-4 border-indigo-600' : 'text-darklight dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darklight'}`}

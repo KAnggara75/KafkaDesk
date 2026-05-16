@@ -4,6 +4,13 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
 import { LoadingScreen } from '../components/LoadingScreen';
 
+interface PartitionInfo {
+	partition: number;
+	leader: number;
+	offsetMax: number;
+	offsetMin: number;
+}
+
 interface Topic {
 	name: string;
 	internal: boolean;
@@ -15,6 +22,7 @@ interface Topic {
 	segmentCount: number;
 	underReplicatedPartitions: number;
 	cleanUpPolicy: string;
+	partitions?: PartitionInfo[];
 }
 
 type SortConfig = {
@@ -176,7 +184,7 @@ const Topics: React.FC = () => {
 
 	return (
 		<div className="mx-auto pb-20 transition-colors duration-300">
-			<header className="flex items-center justify-between mb-4">
+			<header className="flex items-center justify-between mb-4 select-none">
 				<h1 className="text-xl ml-4 mt-4 text-slate-900 dark:text-slate-100 transition-colors duration-300">Topics</h1>
 				<button className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm">
 					<svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -190,7 +198,7 @@ const Topics: React.FC = () => {
 			<div className="mb-6 space-y-4">
 				<div className="flex items-center space-x-4">
 					{/* Search Bar */}
-					<div className="relative flex-1 max-w-2xl ml-6">
+					<div className="relative flex-1 max-w-2xl ml-6 select-none">
 						<span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
 							<svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
 								<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
@@ -225,26 +233,26 @@ const Topics: React.FC = () => {
 							/>
 							<div className="w-11 h-6 bg-gray-200 dark:bg-darklight peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
 						</label>
-						<span className="text-sm font-medium text-slate-600 dark:text-slate-400">Show Internal Topics</span>
+						<span className="text-sm font-medium text-dark dark:text-slate-400 select-none">Show Internal Topics</span>
 					</div>
 				</div>
 
 				{/* Action Buttons */}
-				<div className="flex space-x-2 ml-6">
+				<div className="flex space-x-2 ml-6 select-none">
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-dark cursor-not-allowed'}`}
 						disabled={!isAnySelected}
 					>
 						Delete selected topics ({selectedTopics.size})
 					</button>
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-dark cursor-not-allowed'}`}
 						disabled={selectedTopics.size !== 1}
 					>
 						Copy selected topic
 					</button>
 					<button
-						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
+						className={`px-4 py-2 border text-xs font-semibold rounded-lg uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'border-gray-400 dark:border-dark bg-gray-50 dark:bg-dark/50 text-gray-400 dark:text-dark cursor-not-allowed'}`}
 						disabled={!isAnySelected}
 					>
 						Purge messages
@@ -322,22 +330,24 @@ const Topics: React.FC = () => {
 											onChange={() => toggleSelectTopic(topic.name)}
 										/>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap">
+									<td className="px-6 whitespace-nowrap">
 										<div className="flex items-center">
 											{topic.internal && (
-												<span className="bg-slate-100 dark:bg-darklight text-slate-600 dark:text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-600 mr-2 uppercase transition-colors">IN</span>
+												<span className="bg-slate-100 dark:bg-darklight text-dark dark:text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 dark:border-dark mr-2 uppercase transition-colors">IN</span>
 											)}
 											<span className="text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors">{topic.name}</span>
 										</div>
 									</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.partitionCount}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.underReplicatedPartitions}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.replicationFactor}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.segmentCount}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{formatSize(topic.segmentSize)}</td>
-									<td className="px-6 py-4 whitespace-nowrap text-right text-slate-400 relative dropdown-container">
+									<td className="px-6 whitespace-nowrap text-sm text-dark dark:text-slate-400 transition-colors select-none">{topic.partitionCount}</td>
+									<td className="px-6 whitespace-nowrap text-sm text-dark dark:text-slate-400 transition-colors select-none">{topic.underReplicatedPartitions}</td>
+									<td className="px-6 whitespace-nowrap text-sm text-dark dark:text-slate-400 transition-colors select-none">{topic.replicationFactor}</td>
+									<td className="px-6 whitespace-nowrap text-sm text-dark dark:text-slate-400 transition-colors select-none">
+										{topic.partitions ? topic.partitions.reduce((sum, p) => sum + p.offsetMax, 0).toLocaleString() : "-"}
+									</td>
+									<td className="px-6 whitespace-nowrap text-sm text-dark dark:text-slate-400 transition-colors select-none">{formatSize(topic.segmentSize)}</td>
+									<td className="px-6 whitespace-nowrap text-right text-slate-400 relative dropdown-container">
 										<button
-											className="hover:text-slate-600 transition-colors p-1"
+											className="hover:text-dark transition-colors p-1"
 											onClick={() => setActiveDropdown(activeDropdown === topic.name ? null : topic.name)}
 										>
 											<svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -348,7 +358,7 @@ const Topics: React.FC = () => {
 										{activeDropdown === topic.name && (
 											<div className="absolute right-6 top-10 w-48 bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-md shadow-lg z-50 py-1.5 transition-colors duration-300">
 												<button
-													className={`w-full text-left px-4 py-2 text-sm transition-colors ${topic.internal ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-darklight dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darklight'}`}
+													className={`w-full text-left px-4 py-2 text-sm transition-colors ${topic.internal ? 'text-gray-300 dark:text-dark cursor-not-allowed' : 'text-darklight dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-darklight'}`}
 													disabled={topic.internal}
 													title={topic.internal ? "Clearing messages is only allowed for regular topics" : ""}
 												>
