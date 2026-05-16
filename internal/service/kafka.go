@@ -321,6 +321,8 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 
 			var offsetMax, offsetMin int64
 			conn, err := dialer.DialPartition(ctx, "tcp", clusterCfg.BootstrapServers, kafka.Partition{Topic: topic.Name, ID: p.ID})
+			log.Info().Err(err).Interface("conn", conn).Msg("Connected to topic")
+
 			if err == nil {
 				offsetMin, _ = conn.ReadFirstOffset()
 				offsetMax, _ = conn.ReadLastOffset()
