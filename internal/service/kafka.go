@@ -281,6 +281,14 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 		return nil, err
 	}
 
+	transport := s.getTransport(clusterCfg)
+	dialer := &kafka.Dialer{
+		Timeout:       10 * time.Second,
+		DualStack:     true,
+		TLS:           transport.TLS,
+		SASLMechanism: transport.SASL,
+	}
+
 	topics := make([]TopicInfo, 0, len(resp.Topics))
 	for _, topic := range resp.Topics {
 		pInfos := make([]PartitionInfo, 0, len(topic.Partitions))
@@ -311,13 +319,26 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 				underReplicated++
 			}
 
+			var offsetMax, offsetMin int64
+			conn, err := dialer.DialPartition(ctx, "tcp", clusterCfg.BootstrapServers, kafka.Partition{Topic: topic.Name, ID: p.ID})
+			if err == nil {
+				offsetMin, _ = conn.ReadFirstOffset()
+				offsetMax, _ = conn.ReadLastOffset()
+				conn.Close()
+			}
+
 			pInfos = append(pInfos, PartitionInfo{
 				Partition: p.ID,
 				Leader:    p.Leader.ID,
 				Replicas:  replicas,
-				OffsetMax: 0, // Placeholder
-				OffsetMin: 0, // Placeholder
+				OffsetMax: offsetMax,
+				OffsetMin: offsetMin,
 			})
+		}
+
+		totalOffsetMax := int64(0)
+		for _, pi := range pInfos {
+			totalOffsetMax += pi.OffsetMax
 		}
 
 		replicationFactor := 0
@@ -333,10 +354,10 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			ReplicationFactor:         replicationFactor,
 			Replicas:                  totalReplicas,
 			InSyncReplicas:            totalIsr,
-			SegmentSize:               0,             // Placeholder
-			SegmentCount:              totalReplicas, // Basic estimation
-			BytesInPerSec:             nil,           // Placeholder
-			BytesOutPerSec:            nil,           // Placeholder
+			SegmentSize:               0,                   // Placeholder
+			SegmentCount:              int(totalOffsetMax), // Total offset max
+			BytesInPerSec:             nil,                 // Placeholder
+			BytesOutPerSec:            nil,                 // Placeholder
 			UnderReplicatedPartitions: underReplicated,
 			CleanUpPolicy:             "COMPACT_DELETE", // Placeholder
 			Partitions:                pInfos,
