@@ -104,7 +104,7 @@ const Layout: React.FC = () => {
   return (
     <div className="bg-gray-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 overflow-x-hidden min-h-screen transition-colors duration-300">
       {/* Header */}
-      <header className="h-14 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 sticky top-0 z-50 transition-colors duration-300">
+      <header className="h-12 bg-white dark:bg-dark border-b border-gray-200 dark:border-slate-700 flex items-center justify-between pl-2 pr-6 sticky top-0 z-50 transition-colors duration-300">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -168,8 +168,8 @@ const Layout: React.FC = () => {
 
       <div className="flex min-h-[calc(100vh-3.5rem)] relative overflow-hidden">
         {/* Sidebar */}
-        <aside className={`bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-56 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
-          <div className="w-56"> {/* Fixed width wrapper to prevent layout shift during transition */}
+        <aside className={`bg-white dark:bg-dark border-r border-gray-200 dark:border-slate-700 py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-48 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
+          <div className="w-48"> {/* Fixed width wrapper to prevent layout shift during transition */}
             <nav className="space-y-1">
             <Link
               className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-r-4 border-indigo-600' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
@@ -220,7 +220,7 @@ const Layout: React.FC = () => {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 p-6">
+        <main className="flex-1 p-4">
           <Outlet context={{ clusters }} />
         </main>
       </div>

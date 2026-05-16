@@ -13,8 +13,8 @@ import (
 var (
 	// These values can be set via ldflags during build
 	Version   = "dev"
-	CommitID  = "unknown"
-	BuildTime = "unknown"
+	CommitID  = "83b5a60"
+	BuildTime = "May 16, 2026"
 )
 
 type BuildInfo struct {
