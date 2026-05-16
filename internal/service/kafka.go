@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -282,12 +284,6 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 	}
 
 	transport := s.getTransport(clusterCfg)
-	dialer := &kafka.Dialer{
-		Timeout:       10 * time.Second,
-		DualStack:     true,
-		TLS:           transport.TLS,
-		SASLMechanism: transport.SASL,
-	}
 
 	topics := make([]TopicInfo, 0, len(resp.Topics))
 	for _, topic := range resp.Topics {
@@ -326,27 +322,89 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			}
 		}
 
-		// Fetch offsets concurrently
+		// Group partitions by leader to fetch offsets in batch
+		leaderPartitions := make(map[int][]int) // leaderID -> list of partition indices in topic.Partitions
+		for i, p := range topic.Partitions {
+			leaderPartitions[p.Leader.ID] = append(leaderPartitions[p.Leader.ID], i)
+		}
+
 		var pWg sync.WaitGroup
-		sem := make(chan struct{}, 50)
-		for i := range topic.Partitions {
-			pWg.Add(1)
-			go func(idx int, pName string, pID int) {
-				defer pWg.Done()
-				sem <- struct{}{}
-				defer func() { <-sem }()
-
-				conn, err := dialer.DialLeader(ctx, "tcp", clusterCfg.BootstrapServers, pName, pID)
-				if err == nil {
-					offMin, _ := conn.ReadFirstOffset()
-					offMax, _ := conn.ReadLastOffset()
-					conn.Close() // #nosec G104
-
-					// Update pInfos safely since each goroutine writes to a unique index
-					pInfos[idx].OffsetMax = offMax
-					pInfos[idx].OffsetMin = offMin
+		for leaderID, pIndices := range leaderPartitions {
+			// Find leader address
+			var leaderAddr string
+			for _, b := range resp.Brokers {
+				if b.ID == leaderID {
+					leaderAddr = net.JoinHostPort(b.Host, fmt.Sprintf("%d", b.Port))
+					break
 				}
-			}(i, topic.Name, topic.Partitions[i].ID)
+			}
+
+			if leaderAddr == "" {
+				continue
+			}
+
+			pWg.Add(1)
+			go func(addr string, indices []int) {
+				defer pWg.Done()
+
+				client := &kafka.Client{
+					Addr:      kafka.TCP(addr),
+					Transport: transport,
+				}
+
+				// Fetch Latest Offsets (-1)
+				latestReq := make(map[string][]kafka.OffsetRequest)
+				latestReq[topic.Name] = make([]kafka.OffsetRequest, len(indices))
+				for i, idx := range indices {
+					latestReq[topic.Name][i] = kafka.OffsetRequest{
+						Partition: topic.Partitions[idx].ID,
+						Timestamp: kafka.LastOffset,
+					}
+				}
+
+				latestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+					Topics: latestReq,
+				})
+				if err == nil {
+					if partitions, ok := latestRes.Topics[topic.Name]; ok {
+						for _, resP := range partitions {
+							// Find which local index this belongs to
+							for _, idx := range indices {
+								if topic.Partitions[idx].ID == resP.Partition {
+									pInfos[idx].OffsetMax = resP.FirstOffset
+									break
+								}
+							}
+						}
+					}
+				}
+
+				// Fetch Earliest Offsets (-2)
+				earliestReq := make(map[string][]kafka.OffsetRequest)
+				earliestReq[topic.Name] = make([]kafka.OffsetRequest, len(indices))
+				for i, idx := range indices {
+					earliestReq[topic.Name][i] = kafka.OffsetRequest{
+						Partition: topic.Partitions[idx].ID,
+						Timestamp: kafka.FirstOffset,
+					}
+				}
+
+				earliestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+					Topics: earliestReq,
+				})
+				if err == nil {
+					if partitions, ok := earliestRes.Topics[topic.Name]; ok {
+						for _, resP := range partitions {
+							for _, idx := range indices {
+								if topic.Partitions[idx].ID == resP.Partition {
+									pInfos[idx].OffsetMin = resP.FirstOffset
+									break
+								}
+							}
+						}
+					}
+				}
+			}(leaderAddr, pIndices)
 		}
 		pWg.Wait()
 
