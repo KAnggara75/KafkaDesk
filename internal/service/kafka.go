@@ -80,11 +80,26 @@ func NewKafkaService(cfg *config.Config) KafkaService {
 }
 
 func (s *kafkaService) GetClusters() []ClusterResponse {
-	responses := make([]ClusterResponse, 0)
+	clusterCount := len(s.cfg.KafkaClusters)
+	responses := make([]ClusterResponse, clusterCount)
+	resultChan := make(chan struct {
+		index int
+		res   ClusterResponse
+	}, clusterCount)
 
-	for _, clusterCfg := range s.cfg.KafkaClusters {
-		res := s.getClusterMetadata(clusterCfg)
-		responses = append(responses, res)
+	for i, clusterCfg := range s.cfg.KafkaClusters {
+		go func(idx int, cfg config.KafkaClusterConfig) {
+			res := s.getClusterMetadata(cfg)
+			resultChan <- struct {
+				index int
+				res   ClusterResponse
+			}{idx, res}
+		}(i, clusterCfg)
+	}
+
+	for i := 0; i < clusterCount; i++ {
+		result := <-resultChan
+		responses[result.index] = result.res
 	}
 
 	return responses
@@ -336,7 +351,7 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 	}
 
 	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
-	log.Debug().Interface("metadata", resp).Msg("Kafka metadata response received")
+	// log.Debug().Interface("metadata", resp).Msg("Kafka metadata response received")
 	if err != nil {
 		status = "offline"
 		errStr := err.Error()
@@ -351,7 +366,7 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 	}
 
 	version := s.getKafkaVersion(ctx, &clusterCfg, transport)
-
+	log.Debug().Str("cluster", clusterCfg.Name).Str("version", version).Msg("Kafka version retrieved")
 	return ClusterResponse{
 		Name:                 clusterCfg.Name,
 		Status:               status,
