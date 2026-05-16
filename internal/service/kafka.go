@@ -69,7 +69,7 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 		status = "offline"
 		errStr := err.Error()
 		lastError = &errStr
-		log.Error().Err(err).Str("cluster", clusterCfg.Name).Msg("Failed to fetch Kafka metadata")
+		log.Warn().Err(err).Str("cluster", clusterCfg.Name).Msg("Failed to fetch Kafka metadata")
 	} else {
 		brokerCount = len(resp.Brokers)
 		topicCount = len(resp.Topics)
