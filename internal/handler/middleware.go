@@ -2,30 +2,38 @@ package handler
 
 import (
 	"context"
+	"encoding/json"
 	"net/http"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v5"
 
 	"github.com/KAnggara75/KafkaDesk/internal/config"
+	"github.com/KAnggara75/KafkaDesk/internal/service"
 )
 
 type contextKey string
 
 const UserContextKey contextKey = "user"
 
-func AuthMiddleware(cfg *config.Config) func(http.Handler) http.Handler {
+func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			renderError := func(message string, status int) {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(status)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": message})
+			}
+
 			authHeader := r.Header.Get("Authorization")
 			if authHeader == "" {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				renderError("Unauthorized", http.StatusUnauthorized)
 				return
 			}
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				http.Error(w, "Invalid authorization header", http.StatusUnauthorized)
+				renderError("Invalid authorization header", http.StatusUnauthorized)
 				return
 			}
 
@@ -35,14 +43,22 @@ func AuthMiddleware(cfg *config.Config) func(http.Handler) http.Handler {
 			})
 
 			if err != nil || !token.Valid {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				renderError("Unauthorized", http.StatusUnauthorized)
 				return
 			}
 
 			claims, ok := token.Claims.(jwt.MapClaims)
 			if !ok {
-				http.Error(w, "Unauthorized", http.StatusUnauthorized)
+				renderError("Unauthorized", http.StatusUnauthorized)
 				return
+			}
+
+			// Check Blacklist
+			if jti, ok := claims["jti"].(string); ok {
+				if blacklist.IsBlacklisted(jti) {
+					renderError("Unauthorized: token is blacklisted", http.StatusUnauthorized)
+					return
+				}
 			}
 
 			ctx := context.WithValue(r.Context(), UserContextKey, claims["sub"])

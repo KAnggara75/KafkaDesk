@@ -7,13 +7,14 @@ import (
 
 	"github.com/KAnggara75/KafkaDesk/internal/config"
 	"github.com/KAnggara75/KafkaDesk/internal/handler"
+	"github.com/KAnggara75/KafkaDesk/internal/service"
 )
 
-func NewRouter(cfg *config.Config, authHandler *handler.AuthHandler, kafkaHandler *handler.KafkaHandler) *http.ServeMux {
+func NewRouter(cfg *config.Config, authHandler *handler.AuthHandler, kafkaHandler *handler.KafkaHandler, blacklist service.BlacklistService) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// Auth Middleware
-	auth := handler.AuthMiddleware(cfg)
+	auth := handler.AuthMiddleware(cfg, blacklist)
 
 	// 1. API Endpoints
 	mux.HandleFunc("POST /api/v1/login", authHandler.Login)
