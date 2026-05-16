@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import Layout from '../components/Layout';
 
 interface Cluster {
@@ -11,9 +11,15 @@ interface Cluster {
   lastError: string | null;
 }
 
+type SortConfig = {
+  key: keyof Cluster;
+  direction: 'asc' | 'desc';
+} | null;
+
 const Dashboard: React.FC = () => {
   const [clusters, setClusters] = useState<Cluster[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
 
   useEffect(() => {
     const fetchClusters = async () => {
@@ -37,6 +43,45 @@ const Dashboard: React.FC = () => {
 
     fetchClusters();
   }, []);
+
+  const sortedClusters = useMemo(() => {
+    const sortableItems = [...clusters];
+    if (sortConfig !== null) {
+      sortableItems.sort((a, b) => {
+        const aVal = a[sortConfig.key];
+        const bVal = b[sortConfig.key];
+
+        if (aVal === null) return 1;
+        if (bVal === null) return -1;
+
+        if (aVal < bVal) {
+          return sortConfig.direction === 'asc' ? -1 : 1;
+        }
+        if (aVal > bVal) {
+          return sortConfig.direction === 'asc' ? 1 : -1;
+        }
+        return 0;
+      });
+    }
+    return sortableItems;
+  }, [clusters, sortConfig]);
+
+  const requestSort = (key: keyof Cluster) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig && sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const getSortIcon = (key: keyof Cluster) => {
+    const isActive = sortConfig?.key === key;
+    return (
+      <svg className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+      </svg>
+    );
+  };
 
   const onlineCount = clusters.filter(c => c.status === 'online').length;
   const offlineCount = clusters.filter(c => c.status !== 'online').length;
@@ -80,16 +125,46 @@ const Dashboard: React.FC = () => {
         <table className="w-full text-left border-collapse">
           <thead className="bg-white border-b border-gray-200 text-xs">
             <tr>
-              <th className="px-4 py-3 font-semibold text-slate-500">Cluster name</th>
-              <th className="px-4 py-3 font-semibold text-slate-500">Version</th>
-              <th className="px-4 py-3 font-semibold text-slate-500">Brokers count</th>
-              <th className="px-4 py-3 font-semibold text-slate-500">Partitions</th>
-              <th className="px-4 py-3 font-semibold text-slate-500">Topics</th>
-              <th className="px-4 py-3 font-semibold text-slate-500">Status</th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('name')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('name')}
+                  <span>Cluster name</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('version')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('version')}
+                  <span>Version</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('brokerCount')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('brokerCount')}
+                  <span>Brokers count</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('onlinePartitionCount')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('onlinePartitionCount')}
+                  <span>Partitions</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('topicCount')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('topicCount')}
+                  <span>Topics</span>
+                </div>
+              </th>
+              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('status')}>
+                <div className="flex items-center space-x-1">
+                  {getSortIcon('status')}
+                  <span>Status</span>
+                </div>
+              </th>
             </tr>
           </thead>
           <tbody className="text-sm divide-y divide-gray-100">
-            {clusters.map((cluster) => (
+            {sortedClusters.map((cluster) => (
               <tr key={cluster.name} className="hover:bg-gray-50 transition-colors">
                 <td className="px-4 py-4 font-medium text-slate-800">{cluster.name}</td>
                 <td className="px-4 py-4">{cluster.version}</td>
