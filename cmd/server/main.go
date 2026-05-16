@@ -16,16 +16,16 @@ import (
 )
 
 func main() {
-	// Load .env file
-	if err := godotenv.Load(); err != nil {
-		// Just warn, as env vars might be set in the system/docker
-	}
-
 	// Configure zerolog
 	zerolog.TimeFieldFormat = time.RFC3339
 	log.Logger = log.Output(os.Stdout).With().
 		Str("service", "KafkaDesk").
 		Logger()
+
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		log.Warn().Err(err).Msg("Failed to load .env file")
+	}
 
 	cfg := config.LoadConfig()
 
