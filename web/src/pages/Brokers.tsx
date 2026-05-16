@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowUpShortWide, faArrowDownShortWide } from '@fortawesome/free-solid-svg-icons';
 
 interface Broker {
   id: number;
@@ -142,10 +144,14 @@ const Brokers: React.FC = () => {
 
   const getSortIcon = (key: keyof Broker) => {
     const isActive = sortConfig?.key === key;
+    const direction = isActive ? sortConfig.direction : 'asc';
+    const icon = direction === 'asc' ? faArrowUpShortWide : faArrowDownShortWide;
+
     return (
-      <svg className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-      </svg>
+      <FontAwesomeIcon
+        icon={icon}
+        className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}
+      />
     );
   };
 
