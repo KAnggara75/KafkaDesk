@@ -324,7 +324,7 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			if err == nil {
 				offsetMin, _ = conn.ReadFirstOffset()
 				offsetMax, _ = conn.ReadLastOffset()
-				conn.Close()
+				conn.Close() // #nosec G104
 			}
 
 			pInfos = append(pInfos, PartitionInfo{
