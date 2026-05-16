@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"net/http"
 	"strings"
 
@@ -33,6 +34,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
+				log.Printf("[AUTH] Invalid auth header format from %s", r.RemoteAddr)
 				renderError("Invalid authorization header", http.StatusUnauthorized)
 				return
 			}
@@ -43,6 +45,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 			})
 
 			if err != nil || !token.Valid {
+				log.Printf("[AUTH] Invalid or expired token from %s: %v", r.RemoteAddr, err)
 				renderError("Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -56,6 +59,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 			// Check Blacklist
 			if jti, ok := claims["jti"].(string); ok {
 				if blacklist.IsBlacklisted(jti) {
+					log.Printf("[AUTH] Blacklisted token attempt: [JTI: %s], [User: %v]", jti, claims["sub"])
 					renderError("Unauthorized: token is blacklisted", http.StatusUnauthorized)
 					return
 				}

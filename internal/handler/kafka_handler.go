@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/KAnggara75/KafkaDesk/internal/service"
@@ -16,7 +17,11 @@ func NewKafkaHandler(kafkaService service.KafkaService) *KafkaHandler {
 }
 
 func (h *KafkaHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
+	user := r.Context().Value(UserContextKey)
 	clusters := h.kafkaService.GetClusters()
+
+	log.Printf("[KAFKA] User [%v] requested cluster list. Returning %d clusters.", user, len(clusters))
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(clusters)
 }
