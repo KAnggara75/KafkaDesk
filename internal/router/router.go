@@ -20,11 +20,19 @@ func NewRouter(authHandler *handler.AuthHandler) *http.ServeMux {
 	fileServer := http.FileServer(http.Dir(distPath))
 
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		// Gabungkan path untuk cek file fisik di web/dist
-		path := filepath.Join(distPath, r.URL.Path)
+		// Bersihkan path untuk mencegah path traversal
+		cleanPath := filepath.Clean(r.URL.Path)
+		fullPath := filepath.Join(distPath, cleanPath)
+
+		// Verifikasi bahwa path yang dibersihkan tetap berada di dalam distPath
+		rel, err := filepath.Rel(distPath, fullPath)
+		if err != nil || (len(rel) >= 2 && rel[:2] == "..") {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
 
 		// Cek status file
-		info, err := os.Stat(path)
+		info, err := os.Stat(fullPath)
 
 		// Jika file tidak ada atau merupakan direktori, sajikan index.html (SPA Fallback)
 		if os.IsNotExist(err) || info.IsDir() {
