@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -12,12 +13,12 @@ import (
 var (
 	// These values can be set via ldflags during build
 	Version   = "dev"
-	CommitId  = "unknown"
+	CommitID  = "unknown"
 	BuildTime = "unknown"
 )
 
 type BuildInfo struct {
-	CommitId        string `json:"commitId"`
+	CommitID        string `json:"commitId"`
 	Version         string `json:"version"`
 	BuildTime       string `json:"buildTime"`
 	IsLatestRelease bool   `json:"isLatestRelease"`
@@ -40,11 +41,13 @@ type InfoService interface {
 
 type infoService struct {
 	githubApiUrl string
+	tagsApiUrl   string
 }
 
 func NewInfoService() InfoService {
 	return &infoService{
 		githubApiUrl: "https://api.github.com/repos/KAnggara75/KafkaDesk/releases/latest",
+		tagsApiUrl:   "https://api.github.com/repos/KAnggara75/KafkaDesk/tags",
 	}
 }
 
@@ -54,20 +57,46 @@ type githubRelease struct {
 	HtmlUrl     string    `json:"html_url"`
 }
 
+type githubTag struct {
+	Name   string `json:"name"`
+	Commit struct {
+		Sha string `json:"sha"`
+	} `json:"commit"`
+}
+
 func (s *infoService) GetInfo(ctx context.Context) InfoResponse {
 	response := InfoResponse{
 		Build: BuildInfo{
-			CommitId:  CommitId,
+			CommitID:  CommitID,
 			Version:   Version,
 			BuildTime: BuildTime,
 		},
 	}
 
-	// Fetch latest release from GitHub
 	client := &http.Client{
 		Timeout: 5 * time.Second,
 	}
 
+	// 1. Fetch tags to determine build version
+	if CommitID != "unknown" {
+		req, _ := http.NewRequestWithContext(ctx, "GET", s.tagsApiUrl, nil)
+		if resp, err := client.Do(req); err == nil {
+			defer resp.Body.Close()
+			if resp.StatusCode == http.StatusOK {
+				var tags []githubTag
+				if err := json.NewDecoder(resp.Body).Decode(&tags); err == nil {
+					for _, tag := range tags {
+						if strings.HasPrefix(tag.Commit.Sha, CommitID) {
+							response.Build.Version = tag.Name
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// 2. Fetch latest release from GitHub
 	req, err := http.NewRequestWithContext(ctx, "GET", s.githubApiUrl, nil)
 	if err != nil {
 		log.Warn().Err(err).Msg("Failed to create GitHub API request")
@@ -90,7 +119,7 @@ func (s *infoService) GetInfo(ctx context.Context) InfoResponse {
 				HtmlUrl:     rel.HtmlUrl,
 			}
 			// Compare versions
-			response.Build.IsLatestRelease = (Version == rel.TagName)
+			response.Build.IsLatestRelease = (response.Build.Version == rel.TagName)
 		} else {
 			log.Warn().Err(err).Msg("Failed to decode GitHub release response")
 		}

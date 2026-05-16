@@ -32,15 +32,17 @@ COPY --from=frontend-builder /web/dist ./web/dist
 # Build binary
 # Note: Using CGO_ENABLED=1 and amd64 as requested in user template
 RUN git config --global --add safe.directory /build && \
-    VERSION=$(git describe --tags --always 2>/dev/null || echo "dev") && \
-    COMMIT_ID=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") && \
-    BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) && \
-    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
-    go build -ldflags="-w -s \
-    -X 'github.com/KAnggara75/KafkaDesk/internal/service.Version=${VERSION}' \
-    -X 'github.com/KAnggara75/KafkaDesk/internal/service.CommitId=${COMMIT_ID}' \
-    -X 'github.com/KAnggara75/KafkaDesk/internal/service.BuildTime=${BUILD_TIME}'" \
-    -trimpath -o kafkadesk ./cmd/server/main.go
+    COMMIT_ID="$(git rev-parse --short HEAD 2>/dev/null || echo unknown)" && \
+    BUILD_TIME="$(date -u +"%Y-%m-%dT%H:%M:%SZ")" && \
+    CGO_ENABLED=0 GOOS=linux GOARCH=amd64 \
+    go build \
+      -trimpath \
+      -buildvcs=false \
+      -ldflags="-w -s \
+      -X github.com/KAnggara75/KafkaDesk/internal/service.CommitID=${COMMIT_ID} \
+      -X github.com/KAnggara75/KafkaDesk/internal/service.BuildTime=${BUILD_TIME}" \
+      -o kafkadesk \
+      ./cmd/server/main.go
 
 
 # -------- RUNTIME STAGE --------
