@@ -1,1 +1,7 @@
 issue.md
+tmp/
+main
+server
+*.exe
+*.test
+*.out

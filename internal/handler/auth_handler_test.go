@@ -16,7 +16,7 @@ type mockAuthService struct {
 }
 
 func (m *mockAuthService) Login(u, p string) (string, error) { return m.loginFn(u, p) }
-func (m *mockAuthService) Logout(t string) error            { return m.logoutFn(t) }
+func (m *mockAuthService) Logout(t string) error             { return m.logoutFn(t) }
 
 func TestAuthHandler_Login(t *testing.T) {
 	mockSvc := &mockAuthService{

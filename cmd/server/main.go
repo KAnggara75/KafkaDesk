@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/KAnggara75/KafkaDesk/internal/config"
 	"github.com/KAnggara75/KafkaDesk/internal/handler"
@@ -20,8 +21,15 @@ func main() {
 
 	mux := router.NewRouter(authHandler)
 
+	server := &http.Server{
+		Addr:         ":8080",
+		Handler:      mux,
+		ReadTimeout:  15 * time.Second,
+		WriteTimeout: 15 * time.Second,
+	}
+
 	fmt.Println("KafkaDesk Server is running on :8080...")
-	if err := http.ListenAndServe(":8080", mux); err != nil {
+	if err := server.ListenAndServe(); err != nil {
 		log.Fatal(err)
 	}
 }

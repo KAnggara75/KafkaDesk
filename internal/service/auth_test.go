@@ -4,8 +4,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/KAnggara75/KafkaDesk/internal/config"
 	"github.com/golang-jwt/jwt/v5"
+
+	"github.com/KAnggara75/KafkaDesk/internal/config"
 )
 
 type mockBlacklist struct {
