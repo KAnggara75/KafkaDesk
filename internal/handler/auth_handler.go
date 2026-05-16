@@ -2,8 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/KAnggara75/KafkaDesk/internal/service"
 )
@@ -35,17 +36,32 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
 		if err == service.ErrInvalidCredentials {
-			log.Printf("[AUTH] Login failed for user: %s (invalid credentials)", req.Username)
+			log.Warn().
+				Str("endpoint", "/api/v1/login").
+				Str("method", r.Method).
+				Str("user", req.Username).
+				Msg("Login failed: invalid credentials")
+
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
 			return
 		}
+		log.Error().
+			Err(err).
+			Str("endpoint", "/api/v1/login").
+			Str("method", r.Method).
+			Msg("Internal server error during login")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	log.Printf("[AUTH] User logged in successfully: %s", req.Username)
+	log.Info().
+		Str("endpoint", "/api/v1/login").
+		Str("method", r.Method).
+		Str("user", req.Username).
+		Msg("User logged in successfully")
+
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
@@ -59,13 +75,22 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 
 	jti, err := h.authService.Logout(req.Token)
 	if err != nil {
-		log.Printf("[AUTH] Logout attempt failed: %v", err)
+		log.Warn().
+			Err(err).
+			Str("endpoint", "/api/v1/logout").
+			Str("method", r.Method).
+			Msg("Logout attempt failed")
+
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "logout gagal"})
 		return
 	}
 
-	log.Printf("[AUTH] User logged out successfully, [JWT ID: %s]", jti)
+	log.Info().
+		Str("endpoint", "/api/v1/logout").
+		Str("method", r.Method).
+		Str("jti", jti).
+		Msg("User logged out successfully")
 	w.WriteHeader(http.StatusNoContent)
 }
