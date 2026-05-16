@@ -144,7 +144,7 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
 
                   {isExpanded && (
                     <div className="pl-8 space-y-1 pb-2">
-                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Brokers</a>
+                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href={`/clusters/${cluster.name}/brokers`}>Brokers</a>
                       <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Topics</a>
                       <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Consumers</a>
                       <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">ACL</a>
