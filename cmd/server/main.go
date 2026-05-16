@@ -1,10 +1,12 @@
 package main
 
 import (
-	"fmt"
-	"log"
 	"net/http"
+	"os"
 	"time"
+
+	"github.com/rs/zerolog"
+	"github.com/rs/zerolog/log"
 
 	"github.com/KAnggara75/KafkaDesk/internal/config"
 	"github.com/KAnggara75/KafkaDesk/internal/handler"
@@ -13,6 +15,12 @@ import (
 )
 
 func main() {
+	// Configure zerolog
+	zerolog.TimeFieldFormat = time.RFC3339
+	log.Logger = log.Output(os.Stdout).With().
+		Str("service", "KafkaDesk").
+		Logger()
+
 	cfg := config.LoadConfig()
 
 	blacklistSvc := service.NewBlacklistService()
@@ -31,8 +39,8 @@ func main() {
 		WriteTimeout: 15 * time.Second,
 	}
 
-	fmt.Println("KafkaDesk Server is running on :8080...")
+	log.Info().Msg("KafkaDesk Server is running on :8080...")
 	if err := server.ListenAndServe(); err != nil {
-		log.Fatal(err)
+		log.Fatal().Err(err).Msg("Server failed")
 	}
 }

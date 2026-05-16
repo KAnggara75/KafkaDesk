@@ -2,8 +2,9 @@ package handler
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/KAnggara75/KafkaDesk/internal/service"
 )
@@ -20,7 +21,12 @@ func (h *KafkaHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(UserContextKey)
 	clusters := h.kafkaService.GetClusters()
 
-	log.Printf("[KAFKA] User [%q] requested cluster list. Returning %d clusters.", user, len(clusters)) // #nosec G706
+	log.Info().
+		Str("endpoint", "/api/v1/clusters").
+		Str("method", r.Method).
+		Interface("user", user).
+		Int("clusterCount", len(clusters)).
+		Msg("User requested cluster list")
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(clusters)
