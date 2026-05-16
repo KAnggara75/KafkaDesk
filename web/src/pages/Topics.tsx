@@ -153,10 +153,10 @@ const Topics: React.FC = () => {
   }
 
   return (
-    <div className="max-w-[1600px] mx-auto pb-20">
+    <div className="max-w-[1600px] mx-auto pb-20 transition-colors duration-300">
       <header className="flex items-center justify-between mb-8">
-        <h1 className="text-2xl font-bold text-slate-900">Topics</h1>
-        <button className="bg-indigo-600 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 transition-colors shadow-sm">
+        <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100 transition-colors duration-300">Topics</h1>
+        <button className="bg-indigo-600 dark:bg-indigo-500 text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm">
           <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path d="M12 4v16m8-8H4" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
           </svg>
@@ -176,7 +176,7 @@ const Topics: React.FC = () => {
             </span>
             <input
               type="text"
-              className="block w-full pl-10 pr-10 py-2 border border-gray-200 rounded-md leading-5 bg-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
+              className="block w-full pl-10 pr-10 py-2 border border-gray-200 dark:border-slate-700 rounded-md leading-5 bg-white dark:bg-slate-800 placeholder-gray-400 dark:placeholder-slate-500 text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 text-sm transition-all"
               placeholder="Search by Topic Name"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -201,28 +201,28 @@ const Topics: React.FC = () => {
                 checked={showInternal}
                 onChange={(e) => setShowInternal(e.target.checked)}
               />
-              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
+              <div className="w-11 h-6 bg-gray-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600 transition-colors"></div>
             </label>
-            <span className="text-sm font-medium text-slate-600">Show Internal Topics</span>
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Show Internal Topics</span>
           </div>
         </div>
 
         {/* Action Buttons */}
         <div className="flex space-x-2">
           <button
-            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' : 'border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
             disabled={!isAnySelected}
           >
             Delete selected topics ({selectedTopics.size})
           </button>
           <button
-            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 dark:border-indigo-900/50 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/30' : 'border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
             disabled={selectedTopics.size !== 1}
           >
             Copy selected topic
           </button>
           <button
-            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/30' : 'border-gray-100 dark:border-slate-800 bg-gray-50 dark:bg-slate-800/50 text-gray-400 dark:text-slate-600 cursor-not-allowed'}`}
             disabled={!isAnySelected}
           >
             Purge messages
@@ -231,10 +231,10 @@ const Topics: React.FC = () => {
       </div>
 
       {/* Topics Table */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-colors duration-300">
+        <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
+          <thead className="bg-gray-50 dark:bg-slate-800/50">
+            <tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
               <th className="px-4 py-3 text-left">
                 <input
                   type="checkbox"
@@ -282,16 +282,16 @@ const Topics: React.FC = () => {
               <th className="px-6 py-3"></th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="bg-white dark:bg-slate-800 divide-y divide-gray-100 dark:divide-slate-700 transition-colors duration-300">
             {filteredAndSortedTopics.length === 0 ? (
               <tr>
-                <td colSpan={8} className="px-6 py-12 text-center text-slate-400 italic">
+                <td colSpan={8} className="px-6 py-12 text-center text-slate-400 dark:text-slate-500 italic">
                   No topics found
                 </td>
               </tr>
             ) : (
               filteredAndSortedTopics.map((topic) => (
-                <tr key={topic.name} className={`hover:bg-gray-50 transition-colors ${selectedTopics.has(topic.name) ? 'bg-indigo-50/30' : ''}`}>
+                <tr key={topic.name} className={`hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors ${selectedTopics.has(topic.name) ? 'bg-indigo-50/30 dark:bg-indigo-900/20' : ''}`}>
                   <td className="px-4 py-4 whitespace-nowrap">
                     <input
                       type="checkbox"
@@ -303,16 +303,16 @@ const Topics: React.FC = () => {
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {topic.internal && (
-                        <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 mr-2 uppercase">IN</span>
+                        <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 dark:border-slate-600 mr-2 uppercase transition-colors">IN</span>
                       )}
-                      <span className="text-sm font-medium text-slate-900">{topic.name}</span>
+                      <span className="text-sm font-medium text-slate-900 dark:text-slate-100 transition-colors">{topic.name}</span>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{topic.partitionCount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{topic.underReplicatedPartitions}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{topic.replicationFactor}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{topic.segmentCount}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600">{formatSize(topic.segmentSize)}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.partitionCount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.underReplicatedPartitions}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.replicationFactor}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{topic.segmentCount}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-600 dark:text-slate-400 transition-colors">{formatSize(topic.segmentSize)}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-right text-slate-400 relative dropdown-container">
                     <button
                       className="hover:text-slate-600 transition-colors p-1"
@@ -324,21 +324,21 @@ const Topics: React.FC = () => {
                     </button>
 
                     {activeDropdown === topic.name && (
-                      <div className="absolute right-6 top-10 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1.5">
+                      <div className="absolute right-6 top-10 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-md shadow-lg z-50 py-1.5 transition-colors duration-300">
                         <button
-                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${topic.internal ? 'text-gray-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors ${topic.internal ? 'text-gray-300 dark:text-slate-600 cursor-not-allowed' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                           disabled={topic.internal}
                           title={topic.internal ? "Clearing messages is only allowed for regular topics" : ""}
                         >
                           Clear Messages
-                          {topic.internal && <span className="block text-[10px] text-gray-400">Not allowed for internal topics</span>}
+                          {topic.internal && <span className="block text-[10px] text-gray-400 dark:text-slate-500">Not allowed for internal topics</span>}
                         </button>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
+                        <div className="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+                        <button className="w-full text-left px-4 py-2 text-sm text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
                           Recreate Topic
                         </button>
-                        <div className="border-t border-gray-100 my-1"></div>
-                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors font-medium">
+                        <div className="border-t border-gray-100 dark:border-slate-700 my-1"></div>
+                        <button className="w-full text-left px-4 py-2 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors font-medium">
                           Remove Topic
                         </button>
                       </div>

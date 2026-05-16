@@ -64,34 +64,34 @@ const Dashboard: React.FC = () => {
 
   return (
     <>
-      <h1 className="text-2xl font-semibold text-slate-800 mb-6">Dashboard</h1>
+      <h1 className="text-2xl font-semibold text-slate-800 dark:text-slate-100 mb-6 transition-colors duration-300">Dashboard</h1>
 
       {/* Status Cards */}
       <section className="flex space-x-4 mb-8">
-        <div className="bg-white border border-gray-200 rounded-lg p-4 w-40 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 w-40 shadow-sm flex flex-col justify-between transition-colors duration-300">
           <div className="mb-2">
-            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Online</span>
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400">Online</span>
           </div>
           <div className="flex items-baseline">
-            <span className="text-xl font-semibold text-slate-800">{onlineCount}</span>
-            <span className="ml-1 text-sm text-slate-400">clusters</span>
+            <span className="text-xl font-semibold text-slate-800 dark:text-slate-100">{onlineCount}</span>
+            <span className="ml-1 text-sm text-slate-400 dark:text-slate-500">clusters</span>
           </div>
         </div>
-        <div className="bg-white border border-gray-200 rounded-lg p-4 w-40 shadow-sm flex flex-col justify-between">
+        <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg p-4 w-40 shadow-sm flex flex-col justify-between transition-colors duration-300">
           <div className="mb-2">
-            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-500">Offline</span>
+            <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-400">Offline</span>
           </div>
           <div className="flex items-baseline">
-            <span className="text-xl font-semibold text-slate-800">{offlineCount}</span>
-            <span className="ml-1 text-sm text-slate-400">clusters</span>
+            <span className="text-xl font-semibold text-slate-800 dark:text-slate-100">{offlineCount}</span>
+            <span className="ml-1 text-sm text-slate-400 dark:text-slate-500">clusters</span>
           </div>
         </div>
       </section>
 
       {/* Cluster Table */}
-      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+      <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden transition-colors duration-300">
         <table className="w-full text-left border-collapse">
-          <thead className="bg-white border-b border-gray-200 text-xs">
+          <thead className="bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 text-xs">
             <tr>
               <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('name')}>
                 <div className="flex items-center space-x-1">
@@ -123,7 +123,7 @@ const Dashboard: React.FC = () => {
                   <span>Topics</span>
                 </div>
               </th>
-              <th className="px-4 py-3 font-semibold text-slate-500 cursor-pointer hover:bg-slate-50" onClick={() => requestSort('status')}>
+              <th className="px-4 py-3 font-semibold text-slate-500 dark:text-slate-400 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => requestSort('status')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('status')}
                   <span>Status</span>
@@ -131,16 +131,16 @@ const Dashboard: React.FC = () => {
               </th>
             </tr>
           </thead>
-          <tbody className="text-sm divide-y divide-gray-100">
+          <tbody className="text-sm divide-y divide-gray-100 dark:divide-slate-700">
             {sortedClusters.map((cluster) => (
-              <tr key={cluster.name} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 font-medium text-slate-800">{cluster.name}</td>
-                <td className="px-4 py-4">{cluster.version}</td>
-                <td className="px-4 py-4">{cluster.brokerCount}</td>
-                <td className="px-4 py-4">{cluster.onlinePartitionCount}</td>
-                <td className="px-4 py-4">{cluster.topicCount}</td>
+              <tr key={cluster.name} className="hover:bg-gray-50 dark:hover:bg-slate-700 transition-colors">
+                <td className="px-4 py-4 font-medium text-slate-800 dark:text-slate-100">{cluster.name}</td>
+                <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{cluster.version}</td>
+                <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{cluster.brokerCount}</td>
+                <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{cluster.onlinePartitionCount}</td>
+                <td className="px-4 py-4 text-slate-600 dark:text-slate-400">{cluster.topicCount}</td>
                 <td className="px-4 py-4">
-                  <span className={`px-2 py-1 rounded text-xs font-medium ${cluster.status === 'online' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>
+                  <span className={`px-2 py-1 rounded text-xs font-medium ${cluster.status === 'online' ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
                     {cluster.status}
                   </span>
                 </td>

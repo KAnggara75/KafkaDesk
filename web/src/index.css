@@ -11,23 +11,26 @@
 ::-webkit-scrollbar-track {
   background: #f1f1f1;
 }
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b;
+}
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
   border-radius: 10px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background: #334155;
+}
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
-
-/* Subtle table header styling */
-th {
-  font-weight: 500;
-  color: #64748b;
-  text-transform: capitalize;
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #475569;
 }
 
-td {
-  color: #1e293b;
+/* Global transitions for theme switching */
+* {
+  @apply transition-colors duration-200;
 }

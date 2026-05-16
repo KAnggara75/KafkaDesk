@@ -98,13 +98,13 @@ const Layout: React.FC = () => {
   };
 
   return (
-    <div className="bg-gray-50 font-sans text-slate-900 overflow-x-hidden min-h-screen">
+    <div className="bg-gray-50 dark:bg-slate-900 font-sans text-slate-900 dark:text-slate-100 overflow-x-hidden min-h-screen transition-colors duration-300">
       {/* Header */}
-      <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-50">
+      <header className="h-14 bg-white dark:bg-slate-800 border-b border-gray-200 dark:border-slate-700 flex items-center justify-between px-4 sticky top-0 z-50 transition-colors duration-300">
         <div className="flex items-center space-x-4">
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            className="p-2 hover:bg-slate-50 rounded-md transition-colors text-slate-500"
+            className="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-md transition-colors text-slate-500 dark:text-slate-400"
             title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -117,9 +117,9 @@ const Layout: React.FC = () => {
                 <path d="M12,2L4.5,20.29L5.21,21L12,18L18.79,21L19.5,20.29L12,2Z"></path>
               </svg>
             </div>
-            <span className="font-semibold text-sm tracking-tight text-slate-800">KafkaDesk</span>
+            <span className="font-semibold text-sm tracking-tight text-slate-800 dark:text-slate-200">KafkaDesk</span>
           </Link>
-          <div className="flex items-center space-x-2 text-xs text-slate-400">
+          <div className="flex items-center space-x-2 text-xs text-slate-400 dark:text-slate-500">
             {info && (
               <div className="flex items-center space-x-1">
                 <span className="text-indigo-500 font-medium">{info.build.commitId.substring(0, 7)}</span>
@@ -145,7 +145,7 @@ const Layout: React.FC = () => {
         <div className="flex items-center space-x-5 text-slate-500">
           <button
             onClick={() => setIsDarkMode(!isDarkMode)}
-            className="p-2 hover:bg-slate-50 rounded-full transition-colors text-slate-500 hover:text-indigo-600"
+            className="p-2 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-full transition-colors text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400"
             title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
           >
             {isDarkMode ? (
@@ -164,11 +164,11 @@ const Layout: React.FC = () => {
 
       <div className="flex min-h-[calc(100vh-3.5rem)] relative overflow-hidden">
         {/* Sidebar */}
-        <aside className={`bg-white border-r border-gray-200 py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-56 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
+        <aside className={`bg-white dark:bg-slate-800 border-r border-gray-200 dark:border-slate-700 py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-56 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
           <div className="w-56"> {/* Fixed width wrapper to prevent layout shift during transition */}
             <nav className="space-y-1">
             <Link
-              className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'}`}
+              className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-r-4 border-indigo-600' : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
               to="/"
             >
               Dashboard
@@ -179,7 +179,7 @@ const Layout: React.FC = () => {
                 <div key={cluster.name} className="space-y-1">
                   <button
                     onClick={() => toggleCluster(cluster.name)}
-                    className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
                   >
                     <div className="flex items-center">
                       <span className={`w-2 h-2 rounded-full mr-2 ${cluster.status === 'online' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
@@ -192,20 +192,20 @@ const Layout: React.FC = () => {
 
                   {isExpanded && (
                     <div className="pl-8 space-y-1 pb-2">
-                      <Link
-                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/brokers` ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                       <Link
+                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/brokers` ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-r-4 border-indigo-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                         to={`/clusters/${cluster.name}/brokers`}
                       >
                         Brokers
                       </Link>
                       <Link
-                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/topics` ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/topics` ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/20 border-r-4 border-indigo-600' : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700'}`}
                         to={`/clusters/${cluster.name}/topics`}
                       >
                         Topics
                       </Link>
-                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">Consumers</Link>
-                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">ACL</Link>
+                      <Link className="block px-4 py-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition-colors" to="#">Consumers</Link>
+                      <Link className="block px-4 py-1.5 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 rounded transition-colors" to="#">ACL</Link>
                     </div>
                   )}
                 </div>
