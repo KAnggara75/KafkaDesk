@@ -23,6 +23,7 @@ const Layout: React.FC = () => {
 	const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
 	const [info, setInfo] = useState<InfoResponse | null>(null);
 	const [clusters, setClusters] = useState<any[]>([]);
+	const [loading, setLoading] = useState(true);
 	const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 	const [isDarkMode, setIsDarkMode] = useState(() => {
 		const saved = localStorage.getItem('theme');
@@ -49,6 +50,7 @@ const Layout: React.FC = () => {
 				return;
 			}
 
+			setLoading(true);
 			try {
 				const [infoRes, clustersRes] = await Promise.all([
 					fetch('/api/v1/info', { headers: { 'Authorization': `Bearer ${token}` } }),
@@ -73,6 +75,8 @@ const Layout: React.FC = () => {
 				}
 			} catch (err) {
 				console.error('Failed to fetch layout data', err);
+			} finally {
+				if (isMounted) setLoading(false);
 			}
 		};
 
@@ -222,7 +226,7 @@ const Layout: React.FC = () => {
 
 				{/* Main Content */}
 				<main className="flex-1 dark:bg-dark">
-					<Outlet context={{ clusters }} />
+					<Outlet context={{ clusters, loading }} />
 				</main>
 			</div>
 		</div>

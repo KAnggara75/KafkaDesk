@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
+import { LoadingScreen } from '../components/LoadingScreen';
 
 interface Cluster {
 	name: string;
@@ -19,7 +20,7 @@ type SortConfig = {
 } | null;
 
 const Dashboard: React.FC = () => {
-	const { clusters } = useOutletContext<{ clusters: Cluster[] }>();
+	const { clusters, loading } = useOutletContext<{ clusters: Cluster[], loading: boolean }>();
 	const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
 	const [showOnlyOffline, setShowOnlyOffline] = useState(false);
 
@@ -77,6 +78,10 @@ const Dashboard: React.FC = () => {
 	const onlineCount = clusters.filter(c => c.status === 'online').length;
 	const offlineCount = clusters.filter(c => c.status !== 'online').length;
 
+	if (loading) {
+		return <LoadingScreen />;
+	}
+
 	return (
 		<>
 			<div className="flex items-center justify-between m-4 mb-2">
@@ -120,7 +125,7 @@ const Dashboard: React.FC = () => {
 			</section>
 
 			{/* Cluster Table */}
-			<div className="bg-white dark:bg-dark border border-gray-200 dark:border-darklight rounded-lg shadow-sm overflow-hidden transition-colors duration-300">
+			<div className="bg-white dark:bg-dark border-gray-200 dark:border-darklight shadow-sm overflow-hidden transition-colors duration-300">
 				<table className="w-full text-left border-collapse">
 					<thead className="bg-white dark:bg-dark border-b border-gray-200 dark:border-darklight text-xs">
 						<tr>
