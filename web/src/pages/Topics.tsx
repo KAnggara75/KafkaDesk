@@ -27,6 +27,7 @@ const Topics: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [showInternal, setShowInternal] = useState(true);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: 'name', direction: 'asc' });
+  const [selectedTopics, setSelectedTopics] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,6 +112,27 @@ const Topics: React.FC = () => {
     return result;
   }, [topics, searchQuery, showInternal, sortConfig]);
 
+  const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.checked) {
+      setSelectedTopics(new Set(filteredAndSortedTopics.map(t => t.name)));
+    } else {
+      setSelectedTopics(new Set());
+    }
+  };
+
+  const toggleSelectTopic = (name: string) => {
+    const newSelected = new Set(selectedTopics);
+    if (newSelected.has(name)) {
+      newSelected.delete(name);
+    } else {
+      newSelected.add(name);
+    }
+    setSelectedTopics(newSelected);
+  };
+
+  const isAllSelected = filteredAndSortedTopics.length > 0 && selectedTopics.size === filteredAndSortedTopics.length;
+  const isAnySelected = selectedTopics.size > 0;
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[60vh]">
@@ -176,13 +198,22 @@ const Topics: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex space-x-2">
-          <button className="px-4 py-2 border border-gray-100 bg-gray-50 text-gray-400 text-xs font-semibold rounded-md cursor-not-allowed uppercase tracking-wider transition-colors" disabled>
-            Delete selected topics
+          <button
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            disabled={!isAnySelected}
+          >
+            Delete selected topics ({selectedTopics.size})
           </button>
-          <button className="px-4 py-2 border border-gray-100 bg-gray-50 text-gray-400 text-xs font-semibold rounded-md cursor-not-allowed uppercase tracking-wider transition-colors" disabled>
+          <button
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${selectedTopics.size === 1 ? 'border-indigo-200 bg-indigo-50 text-indigo-600 hover:bg-indigo-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            disabled={selectedTopics.size !== 1}
+          >
             Copy selected topic
           </button>
-          <button className="px-4 py-2 border border-gray-100 bg-gray-50 text-gray-400 text-xs font-semibold rounded-md cursor-not-allowed uppercase tracking-wider transition-colors" disabled>
+          <button
+            className={`px-4 py-2 border text-xs font-semibold rounded-md uppercase tracking-wider transition-colors ${isAnySelected ? 'border-amber-200 bg-amber-50 text-amber-600 hover:bg-amber-100' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'}`}
+            disabled={!isAnySelected}
+          >
             Purge messages
           </button>
         </div>
@@ -194,7 +225,12 @@ const Topics: React.FC = () => {
           <thead className="bg-gray-50">
             <tr className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               <th className="px-4 py-3 text-left">
-                <input type="checkbox" className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                  checked={isAllSelected}
+                  onChange={handleSelectAll}
+                />
               </th>
               <th className="px-6 py-3 text-left cursor-pointer hover:bg-gray-100 transition-colors" onClick={() => requestSort('name')}>
                 <div className="flex items-center space-x-1">
@@ -244,9 +280,14 @@ const Topics: React.FC = () => {
               </tr>
             ) : (
               filteredAndSortedTopics.map((topic) => (
-                <tr key={topic.name} className="hover:bg-gray-50 transition-colors">
+                <tr key={topic.name} className={`hover:bg-gray-50 transition-colors ${selectedTopics.has(topic.name) ? 'bg-indigo-50/30' : ''}`}>
                   <td className="px-4 py-4 whitespace-nowrap">
-                    <input type="checkbox" className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" />
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer"
+                      checked={selectedTopics.has(topic.name)}
+                      onChange={() => toggleSelectTopic(topic.name)}
+                    />
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
