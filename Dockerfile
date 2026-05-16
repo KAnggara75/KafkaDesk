@@ -29,14 +29,13 @@ COPY . .
 # Copy built frontend from stage 1
 COPY --from=frontend-builder /web/dist ./web/dist
 
-# Build-time arguments for versioning
-ARG VERSION=dev
-ARG COMMIT_ID=unknown
-ARG BUILD_TIME=unknown
-
 # Build binary
 # Note: Using CGO_ENABLED=1 and amd64 as requested in user template
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
+RUN git config --global --add safe.directory /build && \
+    VERSION=$(git describe --tags --always 2>/dev/null || echo "dev") && \
+    COMMIT_ID=$(git rev-parse --short HEAD 2>/dev/null || echo "unknown") && \
+    BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ) && \
+    CGO_ENABLED=1 GOOS=linux GOARCH=amd64 \
     go build -ldflags="-w -s \
     -X 'github.com/KAnggara75/KafkaDesk/internal/service.Version=${VERSION}' \
     -X 'github.com/KAnggara75/KafkaDesk/internal/service.CommitId=${COMMIT_ID}' \
