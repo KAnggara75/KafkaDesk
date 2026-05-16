@@ -4,8 +4,11 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"io"
+	"net/http"
 	"os"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -71,10 +74,10 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 			InsecureSkipVerify: false,
 		}
 
-		if caPath, ok := clusterCfg.Properties["SSL_CA_LOCATION"]; ok {
-			caCert, err := os.ReadFile(caPath) // #nosec G304
+		if caLocation, ok := clusterCfg.Properties["SSL_CA_LOCATION"]; ok {
+			caCert, err := s.loadCACert(caLocation)
 			if err != nil {
-				log.Warn().Err(err).Str("cluster", clusterCfg.Name).Str("path", caPath).Msg("Failed to read CA certificate")
+				log.Warn().Err(err).Str("cluster", clusterCfg.Name).Str("location", caLocation).Msg("Failed to load CA certificate")
 			} else {
 				caCertPool := x509.NewCertPool()
 				if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
@@ -138,6 +141,27 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 		Version:              "N/A",
 		Features:             []string{"TOPIC_DELETION", "KAFKA_ACL_VIEW"},
 	}
+}
+
+func (s *kafkaService) loadCACert(location string) ([]byte, error) {
+	if strings.HasPrefix(location, "http://") || strings.HasPrefix(location, "https://") {
+		// Download from URL
+		client := &http.Client{Timeout: 10 * time.Second}
+		resp, err := client.Get(location)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+
+		if resp.StatusCode != http.StatusOK {
+			return nil, os.ErrNotExist // Or custom error
+		}
+
+		return io.ReadAll(resp.Body)
+	}
+
+	// Load from local file
+	return os.ReadFile(location) // #nosec G304
 }
 
 func parseJAAS(config string) (string, string) {
