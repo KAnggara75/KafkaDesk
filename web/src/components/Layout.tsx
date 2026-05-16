@@ -167,7 +167,12 @@ const Layout: React.FC = () => {
                       >
                         Brokers
                       </Link>
-                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">Topics</Link>
+                      <Link
+                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/topics` ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                        to={`/clusters/${cluster.name}/topics`}
+                      >
+                        Topics
+                      </Link>
                       <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">Consumers</Link>
                       <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">ACL</Link>
                     </div>

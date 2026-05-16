@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+	<meta charset="utf-8" />
+	<meta content="width=device-width, initial-scale=1.0" name="viewport" />
+	<title>Kafka UI - Topics</title>
+	<!-- Tailwind CSS v3 with plugins -->
+	<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+	<script>
+		tailwind.config = {
+			theme: {
+				extend: {
+					colors: {
+						'kafka-blue': '#4F46E5',
+						'kafka-sidebar': '#F9FAFB',
+						'kafka-active': '#E5E7EB',
+						'kafka-text-muted': '#6B7280',
+						'kafka-bg-main': '#F3F4F6'
+					}
+				}
+			}
+		}
+	</script>
+	<style data-purpose="custom-styling">
+		/* Custom styles for elements not easily covered by standard Tailwind utility classes */
+		.custom-scrollbar::-webkit-scrollbar {
+			width: 6px;
+		}
+
+		.custom-scrollbar::-webkit-scrollbar-thumb {
+			background-color: #D1D5DB;
+			border-radius: 10px;
+		}
+
+		.toggle-switch:checked+.toggle-slider {
+			background-color: #4F46E5;
+		}
+
+		.toggle-switch:checked+.toggle-slider::before {
+			transform: translateX(1.25rem);
+		}
+	</style>
+</head>
+
+<body class="bg-kafka-bg-main font-sans text-gray-900 h-screen flex overflow-hidden">
+	<!-- BEGIN: Sidebar -->
+	<aside class="w-64 bg-kafka-sidebar border-r border-gray-200 flex flex-col shrink-0 overflow-y-auto custom-scrollbar"
+		data-purpose="main-sidebar">
+		<div class="p-4 border-b border-gray-200 flex items-center space-x-2">
+			<div class="w-8 h-8 bg-kafka-blue rounded-md flex items-center justify-center text-white font-bold">K</div>
+			<span class="font-bold text-lg">Kafka UI</span>
+		</div>
+		<nav class="flex-1 p-4 space-y-4" data-purpose="sidebar-navigation">
+			<div>
+				<h3 class="text-xs font-semibold text-kafka-text-muted uppercase tracking-wider mb-2">Clusters</h3>
+				<div class="space-y-1">
+					<!-- Dev Cluster Expanded -->
+					<div class="group">
+						<button
+							class="w-full flex items-center justify-between py-2 px-2 text-sm font-medium rounded-md text-gray-900 bg-kafka-active"
+							data-purpose="cluster-toggle">
+							<span class="flex items-center">
+								<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+									<path d="M19 9l-7 7-7-7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+								</svg>
+								dev
+							</span>
+						</button>
+						<div class="ml-6 mt-1 space-y-1" data-purpose="cluster-menu-items">
+							<a class="block py-2 px-2 text-sm text-kafka-text-muted hover:text-gray-900" href="#">Dashboard</a>
+							<a class="block py-2 px-2 text-sm font-semibold text-kafka-blue bg-blue-50 rounded-md" href="#">Topics</a>
+							<a class="block py-2 px-2 text-sm text-kafka-text-muted hover:text-gray-900" href="#">Consumers</a>
+							<a class="block py-2 px-2 text-sm text-kafka-text-muted hover:text-gray-900" href="#">Schema Registry</a>
+							<a class="block py-2 px-2 text-sm text-kafka-text-muted hover:text-gray-900" href="#">Kafka Connect</a>
+						</div>
+					</div>
+					<!-- Other Clusters -->
+					<button
+						class="w-full flex items-center justify-between py-2 px-2 text-sm font-medium rounded-md text-gray-700 hover:bg-gray-100">
+						<span class="flex items-center">
+							<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+								<path d="M9 5l7 7-7 7" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+							</svg>
+							production
+						</span>
+					</button>
+				</div>
+			</div>
+		</nav>
+	</aside>
+	<!-- END: Sidebar -->
+	<!-- BEGIN: Main Content Area -->
+	<main class="flex-1 flex flex-col overflow-hidden">
+		<!-- BEGIN: Header -->
+		<header class="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between"
+			data-purpose="page-header">
+			<h1 class="text-2xl font-semibold text-gray-800">Topics</h1>
+			<button
+				class="bg-kafka-blue text-white px-4 py-2 rounded-md text-sm font-medium flex items-center hover:bg-indigo-700 transition-colors">
+				<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+					<path d="M12 4v16m8-8H4" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+				</svg>
+				Add a Topic
+			</button>
+		</header>
+		<!-- END: Header -->
+		<!-- BEGIN: Scrollable Content -->
+		<div class="flex-1 overflow-auto p-6">
+			<!-- BEGIN: Filter Controls -->
+			<div class="mb-6 space-y-4" data-purpose="search-and-filters">
+				<div class="flex items-center space-x-4">
+					<!-- Search Bar -->
+					<div class="relative flex-1 max-w-lg">
+						<span class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+							<svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewbox="0 0 24 24">
+								<path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-linecap="round" stroke-linejoin="round"
+									stroke-width="2"></path>
+							</svg>
+						</span>
+						<input
+							class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-kafka-blue focus:border-kafka-blue sm:text-sm"
+							placeholder="Search by Topic Name" type="text" />
+						<button class="absolute inset-y-0 right-0 pr-3 flex items-center">
+							<svg class="h-5 w-5 text-gray-400 hover:text-gray-600" fill="currentColor" viewbox="0 0 20 20">
+								<path clip-rule="evenodd"
+									d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+									fill-rule="evenodd"></path>
+							</svg>
+						</button>
+					</div>
+					<!-- Internal Topics Toggle -->
+					<div class="flex items-center space-x-3">
+						<label class="relative inline-flex items-center cursor-pointer">
+							<input checked="" class="sr-only peer toggle-switch" type="checkbox" />
+							<div
+								class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-kafka-blue">
+							</div>
+						</label>
+						<span class="text-sm font-medium text-gray-700">Show Internal Topics</span>
+					</div>
+				</div>
+				<!-- Action Buttons (Disabled/Secondary State) -->
+				<div class="flex space-x-2">
+					<button
+						class="px-4 py-2 border border-gray-200 bg-gray-50 text-gray-400 text-sm font-medium rounded-md cursor-not-allowed"
+						disabled="">
+						Delete selected topics
+					</button>
+					<button
+						class="px-4 py-2 border border-gray-200 bg-gray-50 text-gray-400 text-sm font-medium rounded-md cursor-not-allowed"
+						disabled="">
+						Copy selected topic
+					</button>
+					<button
+						class="px-4 py-2 border border-gray-200 bg-gray-50 text-gray-400 text-sm font-medium rounded-md cursor-not-allowed"
+						disabled="">
+						Purge messages of selected topics
+					</button>
+				</div>
+			</div>
+			<!-- END: Filter Controls -->
+			<!-- BEGIN: Topics Table -->
+			<div class="bg-white border border-gray-200 rounded-lg overflow-hidden shadow-sm"
+				data-purpose="topics-data-table">
+				<table class="min-w-full divide-y divide-gray-200">
+					<thead class="bg-gray-50">
+						<tr>
+							<th class="px-4 py-3 text-left" scope="col">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								<div class="flex items-center space-x-1 cursor-pointer">
+									<span>Topic Name</span>
+									<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+										<path d="M5 12l5 5 5-5H5z"></path>
+										<path d="M15 8l-5-5-5 5h10z"></path>
+									</svg>
+								</div>
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								<div class="flex items-center space-x-1 cursor-pointer">
+									<span>Partitions</span>
+									<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+										<path d="M5 12l5 5 5-5H5z"></path>
+										<path d="M15 8l-5-5-5 5h10z"></path>
+									</svg>
+								</div>
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								<div class="flex items-center space-x-1 cursor-pointer">
+									<span>Out of sync replicas</span>
+									<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+										<path d="M5 12l5 5 5-5H5z"></path>
+										<path d="M15 8l-5-5-5 5h10z"></path>
+									</svg>
+								</div>
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								Replication Factor
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								Number of messages
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								<div class="flex items-center space-x-1 cursor-pointer">
+									<span>Size</span>
+									<svg class="w-3 h-3" fill="currentColor" viewbox="0 0 20 20">
+										<path d="M5 12l5 5 5-5H5z"></path>
+										<path d="M15 8l-5-5-5 5h10z"></path>
+									</svg>
+								</div>
+							</th>
+							<th class="px-6 py-3 text-left text-xs font-semibold text-kafka-text-muted uppercase tracking-wider"
+								scope="col">
+								<!-- Action Header Empty -->
+							</th>
+						</tr>
+					</thead>
+					<tbody class="bg-white divide-y divide-gray-100">
+						<!-- Row 1: Internal Topic -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<div class="flex items-center">
+									<span
+										class="bg-gray-100 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 mr-2 uppercase">IN</span>
+									<span class="text-sm font-medium text-gray-900">__consumer_offsets</span>
+								</div>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">50</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">10</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">13 KB</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+						<!-- Row 2: Internal Topic -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<div class="flex items-center">
+									<span
+										class="bg-gray-100 text-gray-800 text-[10px] font-bold px-1.5 py-0.5 rounded border border-gray-200 mr-2 uppercase">IN</span>
+									<span class="text-sm font-medium text-gray-900">_schemas</span>
+								</div>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">1</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0 Bytes</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+						<!-- Row 3: Regular Topic -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<span class="text-sm font-medium text-gray-900">pakaiwa-delivery-status</span>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0 Bytes</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+						<!-- Row 4 -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<span class="text-sm font-medium text-gray-900">pakaiwa-delivery-status-dev</span>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0 Bytes</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+						<!-- Row 5 -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<span class="text-sm font-medium text-gray-900">pakaiwa-incoming-message</span>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0 Bytes</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+						<!-- Row 6 -->
+						<tr class="hover:bg-gray-50">
+							<td class="px-4 py-4 whitespace-nowrap">
+								<input class="h-4 w-4 text-kafka-blue border-gray-300 rounded focus:ring-kafka-blue" type="checkbox" />
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap">
+								<span class="text-sm font-medium text-gray-900">pakaiwa-incoming-message-dev</span>
+							</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">2</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0</td>
+							<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">0 Bytes</td>
+							<td class="px-6 py-4 whitespace-nowrap text-right text-gray-400">
+								<button class="hover:text-gray-600">
+									<svg class="w-5 h-5" fill="currentColor" viewbox="0 0 20 20">
+										<path
+											d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z">
+										</path>
+									</svg>
+								</button>
+							</td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
+			<!-- END: Topics Table -->
+		</div>
+		<!-- END: Scrollable Content -->
+	</main>
+	<!-- END: Main Content Area -->
+</body>
+
+</html>
