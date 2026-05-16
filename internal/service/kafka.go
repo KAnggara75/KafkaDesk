@@ -325,9 +325,10 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			replicationFactor = len(topic.Partitions[0].Replicas)
 		}
 
+		isInternal := topic.Internal || topic.Name == "_schemas"
 		topics = append(topics, TopicInfo{
 			Name:                      topic.Name,
-			Internal:                  topic.Internal,
+			Internal:                  isInternal,
 			PartitionCount:            len(topic.Partitions),
 			ReplicationFactor:         replicationFactor,
 			Replicas:                  totalReplicas,
