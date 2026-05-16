@@ -1,6 +1,12 @@
 package service
 
 import (
+	"context"
+	"time"
+
+	"github.com/rs/zerolog/log"
+	"github.com/segmentio/kafka-go"
+
 	"github.com/KAnggara75/KafkaDesk/internal/config"
 )
 
@@ -35,21 +41,55 @@ func (s *kafkaService) GetClusters() []ClusterResponse {
 	responses := make([]ClusterResponse, 0)
 
 	for _, clusterCfg := range s.cfg.KafkaClusters {
-		responses = append(responses, ClusterResponse{
-			Name:                 clusterCfg.Name,
-			DefaultCluster:       nil,
-			Status:               "online",
-			LastError:            nil,
-			BrokerCount:          2,
-			OnlinePartitionCount: 10, // Mock data
-			TopicCount:           5,  // Mock data
-			BytesInPerSec:        nil,
-			BytesOutPerSec:       nil,
-			ReadOnly:             false,
-			Version:              "1.0-UNKNOWN",
-			Features:             []string{"TOPIC_DELETION", "KAFKA_ACL_VIEW"},
-		})
+		res := s.getClusterMetadata(clusterCfg)
+		responses = append(responses, res)
 	}
 
 	return responses
+}
+
+func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) ClusterResponse {
+	status := "online"
+	var lastError *string = nil
+	brokerCount := 0
+	topicCount := 0
+	partitionCount := 0
+
+	// Connect to Kafka to get metadata
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	client := &kafka.Client{
+		Addr:    kafka.TCP(clusterCfg.BootstrapServers),
+		Timeout: 5 * time.Second,
+	}
+
+	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
+	if err != nil {
+		status = "offline"
+		errStr := err.Error()
+		lastError = &errStr
+		log.Error().Err(err).Str("cluster", clusterCfg.Name).Msg("Failed to fetch Kafka metadata")
+	} else {
+		brokerCount = len(resp.Brokers)
+		topicCount = len(resp.Topics)
+		for _, topic := range resp.Topics {
+			partitionCount += len(topic.Partitions)
+		}
+	}
+
+	return ClusterResponse{
+		Name:                 clusterCfg.Name,
+		DefaultCluster:       nil,
+		Status:               status,
+		LastError:            lastError,
+		BrokerCount:          brokerCount,
+		OnlinePartitionCount: partitionCount,
+		TopicCount:           topicCount,
+		BytesInPerSec:        nil,
+		BytesOutPerSec:       nil,
+		ReadOnly:             false,
+		Version:              "N/A",
+		Features:             []string{"TOPIC_DELETION", "KAFKA_ACL_VIEW"},
+	}
 }

@@ -5,6 +5,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/joho/godotenv"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
 
@@ -15,6 +16,11 @@ import (
 )
 
 func main() {
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		// Just warn, as env vars might be set in the system/docker
+	}
+
 	// Configure zerolog
 	zerolog.TimeFieldFormat = time.RFC3339
 	log.Logger = log.Output(os.Stdout).With().
