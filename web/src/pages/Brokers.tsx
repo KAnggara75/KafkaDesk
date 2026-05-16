@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowUpShortWide, faArrowDownShortWide } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUpShortWide, faArrowDownShortWide, faUpDown } from '@fortawesome/free-solid-svg-icons';
 
 interface Broker {
   id: number;
@@ -144,13 +144,22 @@ const Brokers: React.FC = () => {
 
   const getSortIcon = (key: keyof Broker) => {
     const isActive = sortConfig?.key === key;
-    const direction = isActive ? sortConfig.direction : 'asc';
-    const icon = direction === 'asc' ? faArrowUpShortWide : faArrowDownShortWide;
+
+    if (!isActive) {
+      return (
+        <FontAwesomeIcon
+          icon={faUpDown}
+          className="w-3 h-3 text-slate-300 opacity-50"
+        />
+      );
+    }
+
+    const icon = sortConfig.direction === 'asc' ? faArrowUpShortWide : faArrowDownShortWide;
 
     return (
       <FontAwesomeIcon
         icon={icon}
-        className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`}
+        className="w-3 h-3 text-indigo-600"
       />
     );
   };
