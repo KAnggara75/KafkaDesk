@@ -25,6 +25,7 @@ const Layout: React.FC = () => {
   const [clusters, setClusters] = useState<any[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
     const fetchData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
@@ -38,21 +39,30 @@ const Layout: React.FC = () => {
           fetch('/api/v1/clusters', { headers: { 'Authorization': `Bearer ${token}` } })
         ]);
 
+        if (!isMounted) return;
+
         if (infoRes.status === 401 || clustersRes.status === 401) {
           localStorage.removeItem('token');
           navigate('/login');
           return;
         }
 
-        if (infoRes.ok) setInfo(await infoRes.json());
-        if (clustersRes.ok) setClusters(await clustersRes.json());
+        if (infoRes.ok) {
+          const infoData = await infoRes.json();
+          setInfo(infoData);
+        }
+        if (clustersRes.ok) {
+          const clustersData = await clustersRes.json();
+          setClusters(clustersData);
+        }
       } catch (err) {
         console.error('Failed to fetch layout data', err);
       }
     };
 
     fetchData();
-  }, [navigate]);
+    return () => { isMounted = false; };
+  }, []); // Empty dependency array to run only once on mount
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
