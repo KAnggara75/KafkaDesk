@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/rs/zerolog/log"
@@ -71,12 +72,22 @@ type KafkaService interface {
 	GetBrokersData(clusterName string) (*BrokersResponse, error)
 }
 
+type metadataCache struct {
+	metadata  *kafka.MetadataResponse
+	expiresAt time.Time
+}
+
 type kafkaService struct {
-	cfg *config.Config
+	cfg   *config.Config
+	cache map[string]metadataCache
+	mu    sync.RWMutex
 }
 
 func NewKafkaService(cfg *config.Config) KafkaService {
-	return &kafkaService{cfg: cfg}
+	return &kafkaService{
+		cfg:   cfg,
+		cache: make(map[string]metadataCache),
+	}
 }
 
 func (s *kafkaService) GetClusters() []ClusterResponse {
@@ -118,50 +129,10 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		return nil, os.ErrNotExist
 	}
 
-	transport := &kafka.Transport{
-		IdleTimeout: 30 * time.Second,
-	}
-
-	securityProtocol := clusterCfg.Properties["SECURITY_PROTOCOL"]
-	if securityProtocol == "SSL" || securityProtocol == "SASL_SSL" {
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: false,
-		}
-
-		if caLocation, ok := clusterCfg.Properties["SSL_CA_LOCATION"]; ok {
-			caCert, err := s.loadCACert(caLocation)
-			if err == nil {
-				caCertPool := x509.NewCertPool()
-				if ok := caCertPool.AppendCertsFromPEM(caCert); ok {
-					tlsConfig.RootCAs = caCertPool
-				}
-			}
-		}
-		transport.TLS = tlsConfig
-	}
-
-	saslMechanism := clusterCfg.Properties["SASL_MECHANISM"]
-	if saslMechanism == "PLAIN" {
-		jaasConfig := clusterCfg.Properties["SASL_JAAS_CONFIG"]
-		username, password := parseJAAS(jaasConfig)
-		if username != "" && password != "" {
-			transport.SASL = plain.Mechanism{
-				Username: username,
-				Password: password,
-			}
-		}
-	}
-
 	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	client := &kafka.Client{
-		Addr:      kafka.TCP(clusterCfg.BootstrapServers),
-		Timeout:   10 * time.Second,
-		Transport: transport,
-	}
-
-	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
+	resp, err := s.getMetadata(ctx, clusterCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -239,7 +210,7 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		})
 	}
 
-	version := s.getKafkaVersion(ctx, clusterCfg, transport)
+	version := s.getKafkaVersion(ctx, clusterCfg)
 
 	return &BrokersResponse{
 		BrokerCount:                   len(resp.Brokers),
@@ -256,8 +227,77 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 	}, nil
 }
 
-func (s *kafkaService) getKafkaVersion(ctx context.Context, clusterCfg *config.KafkaClusterConfig, transport *kafka.Transport) string {
+func (s *kafkaService) getMetadata(ctx context.Context, clusterCfg *config.KafkaClusterConfig) (*kafka.MetadataResponse, error) {
+	s.mu.RLock()
+	cached, ok := s.cache[clusterCfg.Name]
+	s.mu.RUnlock()
+
+	if ok && time.Now().Before(cached.expiresAt) {
+		return cached.metadata, nil
+	}
+
+	transport := s.getTransport(clusterCfg)
+	client := &kafka.Client{
+		Addr:      kafka.TCP(clusterCfg.BootstrapServers),
+		Timeout:   10 * time.Second,
+		Transport: transport,
+	}
+
+	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	s.mu.Lock()
+	s.cache[clusterCfg.Name] = metadataCache{
+		metadata:  resp,
+		expiresAt: time.Now().Add(30 * time.Second),
+	}
+	s.mu.Unlock()
+
+	return resp, nil
+}
+
+func (s *kafkaService) getTransport(clusterCfg *config.KafkaClusterConfig) *kafka.Transport {
+	transport := &kafka.Transport{
+		IdleTimeout: 30 * time.Second,
+	}
+
+	securityProtocol := clusterCfg.Properties["SECURITY_PROTOCOL"]
+	if securityProtocol == "SSL" || securityProtocol == "SASL_SSL" {
+		tlsConfig := &tls.Config{
+			InsecureSkipVerify: false,
+		}
+
+		if caLocation, ok := clusterCfg.Properties["SSL_CA_LOCATION"]; ok {
+			caCert, err := s.loadCACert(caLocation)
+			if err == nil {
+				caCertPool := x509.NewCertPool()
+				if ok := caCertPool.AppendCertsFromPEM(caCert); ok {
+					tlsConfig.RootCAs = caCertPool
+				}
+			}
+		}
+		transport.TLS = tlsConfig
+	}
+
+	saslMechanism := clusterCfg.Properties["SASL_MECHANISM"]
+	if saslMechanism == "PLAIN" {
+		jaasConfig := clusterCfg.Properties["SASL_JAAS_CONFIG"]
+		username, password := parseJAAS(jaasConfig)
+		if username != "" && password != "" {
+			transport.SASL = plain.Mechanism{
+				Username: username,
+				Password: password,
+			}
+		}
+	}
+	return transport
+}
+
+func (s *kafkaService) getKafkaVersion(ctx context.Context, clusterCfg *config.KafkaClusterConfig) string {
 	version := "Unknown"
+	transport := s.getTransport(clusterCfg)
 	dialer := &kafka.Dialer{
 		Timeout:       10 * time.Second,
 		DualStack:     true,
@@ -301,57 +341,11 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 	topicCount := 0
 	partitionCount := 0
 
-	// Configure Transport (TLS + SASL)
-	transport := &kafka.Transport{
-		IdleTimeout: 30 * time.Second,
-	}
-
-	securityProtocol := clusterCfg.Properties["SECURITY_PROTOCOL"]
-	if securityProtocol == "SSL" || securityProtocol == "SASL_SSL" {
-		tlsConfig := &tls.Config{
-			InsecureSkipVerify: false,
-		}
-
-		if caLocation, ok := clusterCfg.Properties["SSL_CA_LOCATION"]; ok {
-			caCert, err := s.loadCACert(caLocation)
-			if err != nil {
-				log.Warn().Err(err).Str("cluster", clusterCfg.Name).Str("location", caLocation).Msg("Failed to load CA certificate")
-			} else {
-				caCertPool := x509.NewCertPool()
-				if ok := caCertPool.AppendCertsFromPEM(caCert); !ok {
-					log.Warn().Str("cluster", clusterCfg.Name).Msg("Failed to append CA certificate to pool")
-				} else {
-					tlsConfig.RootCAs = caCertPool
-				}
-			}
-		}
-		transport.TLS = tlsConfig
-	}
-
-	saslMechanism := clusterCfg.Properties["SASL_MECHANISM"]
-	if saslMechanism == "PLAIN" {
-		jaasConfig := clusterCfg.Properties["SASL_JAAS_CONFIG"]
-		username, password := parseJAAS(jaasConfig)
-		if username != "" && password != "" {
-			transport.SASL = plain.Mechanism{
-				Username: username,
-				Password: password,
-			}
-		}
-	}
-
 	// Connect to Kafka to get metadata
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 	defer cancel()
 
-	client := &kafka.Client{
-		Addr:      kafka.TCP(clusterCfg.BootstrapServers),
-		Timeout:   10 * time.Second,
-		Transport: transport,
-	}
-
-	resp, err := client.Metadata(ctx, &kafka.MetadataRequest{})
-	// log.Debug().Interface("metadata", resp).Msg("Kafka metadata response received")
+	resp, err := s.getMetadata(ctx, &clusterCfg)
 	if err != nil {
 		status = "offline"
 		errStr := err.Error()
@@ -365,7 +359,7 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 		}
 	}
 
-	version := s.getKafkaVersion(ctx, &clusterCfg, transport)
+	version := s.getKafkaVersion(ctx, &clusterCfg)
 	log.Debug().Str("cluster", clusterCfg.Name).Str("version", version).Msg("Kafka version retrieved")
 	return ClusterResponse{
 		Name:                 clusterCfg.Name,
