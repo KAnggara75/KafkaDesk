@@ -57,7 +57,8 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.authService.Logout(req.Token); err != nil {
+	jti, err := h.authService.Logout(req.Token)
+	if err != nil {
 		log.Printf("[AUTH] Logout attempt failed: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
@@ -65,6 +66,6 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Printf("[AUTH] User logged out successfully")
+	log.Printf("[AUTH] User logged out successfully, [JWT ID: %s]", jti)
 	w.WriteHeader(http.StatusNoContent)
 }

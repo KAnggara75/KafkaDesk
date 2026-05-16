@@ -12,11 +12,11 @@ import (
 
 type mockAuthService struct {
 	loginFn  func(username, password string) (string, error)
-	logoutFn func(token string) error
+	logoutFn func(token string) (string, error)
 }
 
 func (m *mockAuthService) Login(u, p string) (string, error) { return m.loginFn(u, p) }
-func (m *mockAuthService) Logout(t string) error             { return m.logoutFn(t) }
+func (m *mockAuthService) Logout(t string) (string, error)   { return m.logoutFn(t) }
 
 func TestAuthHandler_Login(t *testing.T) {
 	mockSvc := &mockAuthService{
@@ -62,11 +62,11 @@ func TestAuthHandler_Login(t *testing.T) {
 
 func TestAuthHandler_Logout(t *testing.T) {
 	mockSvc := &mockAuthService{
-		logoutFn: func(t string) error {
+		logoutFn: func(t string) (string, error) {
 			if t == "valid-token" {
-				return nil
+				return "test-jti", nil
 			}
-			return service.ErrInvalidToken
+			return "", service.ErrInvalidToken
 		},
 	}
 	h := NewAuthHandler(mockSvc)

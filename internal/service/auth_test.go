@@ -76,7 +76,7 @@ func TestAuthService_Logout(t *testing.T) {
 
 	token, _ := svc.Login("admin", "password")
 
-	err := svc.Logout(token)
+	_, err := svc.Logout(token)
 	if err != nil {
 		t.Fatalf("expected no error, got %v", err)
 	}

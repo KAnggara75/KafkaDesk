@@ -17,7 +17,7 @@ var (
 
 type AuthService interface {
 	Login(username, password string) (string, error)
-	Logout(tokenString string) error
+	Logout(tokenString string) (string, error)
 }
 
 type authService struct {
@@ -52,7 +52,7 @@ func (s *authService) Login(username, password string) (string, error) {
 	return token.SignedString([]byte(s.cfg.JWTSecret))
 }
 
-func (s *authService) Logout(tokenString string) error {
+func (s *authService) Logout(tokenString string) (string, error) {
 	token, _ := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
 		return []byte(s.cfg.JWTSecret), nil
 	})
@@ -63,9 +63,9 @@ func (s *authService) Logout(tokenString string) error {
 
 		if okJti && okExp {
 			s.blacklist.Add(jti, time.Unix(int64(exp), 0))
-			return nil
+			return jti, nil
 		}
 	}
 
-	return ErrInvalidToken
+	return "", ErrInvalidToken
 }
