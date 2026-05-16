@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - '**.go'
+      - '**.tsx'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
@@ -13,6 +14,7 @@ on:
     branches: ["main"]
     paths:
       - '**.go'
+      - '**.tsx'
       - 'go.mod'
       - 'go.sum'
       - 'Dockerfile'
