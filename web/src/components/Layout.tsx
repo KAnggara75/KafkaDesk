@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
@@ -8,6 +8,14 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
   const navigate = useNavigate();
+  const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
+
+  const toggleCluster = (name: string) => {
+    setExpandedClusters(prev => ({
+      ...prev,
+      [name]: !prev[name]
+    }));
+  };
 
   const handleLogout = async () => {
     const token = localStorage.getItem('token');
@@ -67,19 +75,34 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
             <a className="flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600" href="/">
               Dashboard
             </a>
-            {clusters.map((cluster) => (
-              <div key={cluster.name} className="group">
-                <button className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50">
-                  <div className="flex items-center">
-                    <span className={`w-2 h-2 rounded-full mr-2 ${cluster.status === 'online' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
-                    {cluster.name}
-                  </div>
-                  <svg className="w-4 h-4 text-slate-400 group-hover:text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
-                  </svg>
-                </button>
-              </div>
-            ))}
+            {clusters.map((cluster) => {
+              const isExpanded = expandedClusters[cluster.name];
+              return (
+                <div key={cluster.name} className="space-y-1">
+                  <button
+                    onClick={() => toggleCluster(cluster.name)}
+                    className="w-full flex items-center justify-between px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 transition-colors"
+                  >
+                    <div className="flex items-center">
+                      <span className={`w-2 h-2 rounded-full mr-2 ${cluster.status === 'online' ? 'bg-emerald-500' : 'bg-red-500'}`}></span>
+                      {cluster.name}
+                    </div>
+                    <svg className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"></path>
+                    </svg>
+                  </button>
+
+                  {isExpanded && (
+                    <div className="pl-8 space-y-1 pb-2">
+                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Brokers</a>
+                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Topics</a>
+                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Consumers</a>
+                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">ACL</a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </nav>
         </aside>
 
