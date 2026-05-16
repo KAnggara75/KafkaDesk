@@ -224,6 +224,8 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		})
 	}
 
+	version := s.getKafkaVersion(ctx, clusterCfg, transport)
+
 	return &BrokersResponse{
 		BrokerCount:                   len(resp.Brokers),
 		ZooKeeperStatus:               nil,
@@ -234,9 +236,47 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		OutOfSyncReplicasCount:        osrCount,
 		UnderReplicatedPartitionCount: underReplicated,
 		DiskUsage:                     diskUsage,
-		Version:                       "1.0-UNKNOWN",
+		Version:                       version,
 		Brokers:                       brokers,
 	}, nil
+}
+
+func (s *kafkaService) getKafkaVersion(ctx context.Context, clusterCfg *config.KafkaClusterConfig, transport *kafka.Transport) string {
+	version := "Unknown"
+	dialer := &kafka.Dialer{
+		Timeout:       10 * time.Second,
+		DualStack:     true,
+		TLS:           transport.TLS,
+		SASLMechanism: transport.SASL,
+	}
+	conn, err := dialer.DialContext(ctx, "tcp", clusterCfg.BootstrapServers)
+	if err == nil {
+		defer conn.Close()
+		apiVersions, err := conn.ApiVersions()
+		if err == nil {
+			// In recent kafka-go/kafka, we can't easily get the human version
+			// But we can check for specific API key max versions to guess.
+			// This is a common pattern for Kafka version detection.
+			maxApiKey := int16(0)
+			for _, av := range apiVersions {
+				if av.ApiKey > maxApiKey {
+					maxApiKey = av.ApiKey
+				}
+			}
+
+			// Rough estimation based on max API key
+			if maxApiKey >= 48 {
+				version = "3.x"
+			} else if maxApiKey >= 42 {
+				version = "2.x"
+			} else if maxApiKey >= 16 {
+				version = "1.x"
+			} else {
+				version = "0.x"
+			}
+		}
+	}
+	return version
 }
 
 func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) ClusterResponse {
@@ -310,19 +350,18 @@ func (s *kafkaService) getClusterMetadata(clusterCfg config.KafkaClusterConfig) 
 		}
 	}
 
+	version := s.getKafkaVersion(ctx, &clusterCfg, transport)
+
 	return ClusterResponse{
 		Name:                 clusterCfg.Name,
-		DefaultCluster:       nil,
 		Status:               status,
 		LastError:            lastError,
 		BrokerCount:          brokerCount,
 		OnlinePartitionCount: partitionCount,
 		TopicCount:           topicCount,
-		BytesInPerSec:        nil,
-		BytesOutPerSec:       nil,
+		Version:              version,
 		ReadOnly:             false,
-		Version:              "N/A",
-		Features:             []string{"TOPIC_DELETION", "KAFKA_ACL_VIEW"},
+		Features:             []string{"Brokers", "Topics", "Consumers"},
 	}
 }
 
