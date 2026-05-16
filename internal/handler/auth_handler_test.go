@@ -72,8 +72,8 @@ func TestAuthHandler_Logout(t *testing.T) {
 	h := NewAuthHandler(mockSvc)
 
 	t.Run("Success", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"token": "valid-token"})
-		req := httptest.NewRequest("POST", "/api/v1/logout", bytes.NewBuffer(body))
+		req := httptest.NewRequest("DELETE", "/api/v1/logout", nil)
+		req.Header.Set("Authorization", "Bearer valid-token")
 		rr := httptest.NewRecorder()
 
 		h.Logout(rr, req)
@@ -84,8 +84,19 @@ func TestAuthHandler_Logout(t *testing.T) {
 	})
 
 	t.Run("Failure", func(t *testing.T) {
-		body, _ := json.Marshal(map[string]string{"token": "invalid"})
-		req := httptest.NewRequest("POST", "/api/v1/logout", bytes.NewBuffer(body))
+		req := httptest.NewRequest("DELETE", "/api/v1/logout", nil)
+		req.Header.Set("Authorization", "Bearer invalid")
+		rr := httptest.NewRecorder()
+
+		h.Logout(rr, req)
+
+		if rr.Code != http.StatusBadRequest {
+			t.Errorf("expected status 400, got %d", rr.Code)
+		}
+	})
+
+	t.Run("MissingHeader", func(t *testing.T) {
+		req := httptest.NewRequest("DELETE", "/api/v1/logout", nil)
 		rr := httptest.NewRecorder()
 
 		h.Logout(rr, req)
