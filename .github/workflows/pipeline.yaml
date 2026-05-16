@@ -119,8 +119,24 @@ jobs:
 
       - name: Bump version and push tag
         id: tag_version
-        uses: anothrNick/github-tag-action@1.71.0
+        uses: nothrNick/github-tag-action@1.75.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WITH_V: true
           DEFAULT_BUMP: patch
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2.2.1
+        with:
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: |
+            Automated Release ${{ steps.tag_version.outputs.new_tag }}
+
+            Changes in this version:
+            - Build and push Docker image to GHCR
+            - Automated version bump
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
