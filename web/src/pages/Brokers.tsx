@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowUpShortWide, faArrowDownShortWide, faUpDown } from '@fortawesome/free-solid-svg-icons';
+import { faArrowUp19, faArrowDown19, faUpDown } from '@fortawesome/free-solid-svg-icons';
 
 interface Broker {
   id: number;
@@ -149,17 +149,17 @@ const Brokers: React.FC = () => {
       return (
         <FontAwesomeIcon
           icon={faUpDown}
-          className="w-3 h-3 text-slate-300 opacity-50"
+          className="w-4 h-4 text-slate-300 opacity-50"
         />
       );
     }
 
-    const icon = sortConfig.direction === 'asc' ? faArrowUpShortWide : faArrowDownShortWide;
+    const icon = sortConfig.direction === 'asc' ? faArrowUp19 : faArrowDown19;
 
     return (
       <FontAwesomeIcon
         icon={icon}
-        className="w-3 h-3 text-indigo-600"
+        className="w-4 h-4 text-indigo-600"
       />
     );
   };

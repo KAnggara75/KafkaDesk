@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faArrowUpAZ, faArrowDownZA, faArrowUp19, faArrowDown91, faUpDown } from '@fortawesome/free-solid-svg-icons';
 
 interface Topic {
   name: string;
@@ -79,11 +81,28 @@ const Topics: React.FC = () => {
 
   const getSortIcon = (key: keyof Topic) => {
     const isActive = sortConfig?.key === key;
+
+    if (!isActive) {
+      return (
+        <FontAwesomeIcon
+          icon={faUpDown}
+          className="w-4 h-4 text-slate-300 opacity-50"
+        />
+      );
+    }
+
+    let icon;
+    if (key === 'name') {
+      icon = sortConfig.direction === 'asc' ? faArrowUpAZ : faArrowDownZA;
+    } else {
+      icon = sortConfig.direction === 'asc' ? faArrowUp19 : faArrowDown91;
+    }
+
     return (
-      <svg className={`w-3 h-3 transition-colors ${isActive ? 'text-indigo-600' : 'text-slate-300'}`} fill="currentColor" viewBox="0 0 20 20">
-        <path d="M5 12l5 5 5-5H5z"></path>
-        <path d="M15 8l-5-5-5 5h10z"></path>
-      </svg>
+      <FontAwesomeIcon
+        icon={icon}
+        className="w-4 h-4 text-indigo-600"
+      />
     );
   };
 
