@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -61,6 +63,41 @@ type BrokersResponse struct {
 	Brokers                       []BrokerInfo `json:"brokers"`
 }
 
+type TopicListResponse struct {
+	PageCount int         `json:"pageCount"`
+	Topics    []TopicInfo `json:"topics"`
+}
+
+type TopicInfo struct {
+	Name                      string          `json:"name"`
+	Internal                  bool            `json:"internal"`
+	PartitionCount            int             `json:"partitionCount"`
+	ReplicationFactor         int             `json:"replicationFactor"`
+	Replicas                  int             `json:"replicas"`
+	InSyncReplicas            int             `json:"inSyncReplicas"`
+	SegmentSize               int64           `json:"segmentSize"`
+	SegmentCount              int             `json:"segmentCount"`
+	BytesInPerSec             *float64        `json:"bytesInPerSec"`
+	BytesOutPerSec            *float64        `json:"bytesOutPerSec"`
+	UnderReplicatedPartitions int             `json:"underReplicatedPartitions"`
+	CleanUpPolicy             string          `json:"cleanUpPolicy"`
+	Partitions                []PartitionInfo `json:"partitions"`
+}
+
+type PartitionInfo struct {
+	Partition int           `json:"partition"`
+	Leader    int           `json:"leader"`
+	Replicas  []ReplicaInfo `json:"replicas"`
+	OffsetMax int64         `json:"offsetMax"`
+	OffsetMin int64         `json:"offsetMin"`
+}
+
+type ReplicaInfo struct {
+	Broker int  `json:"broker"`
+	Leader bool `json:"leader"`
+	InSync bool `json:"inSync"`
+}
+
 type DiskUsage struct {
 	BrokerId     int   `json:"brokerId"`
 	SegmentSize  int64 `json:"segmentSize"`
@@ -70,6 +107,7 @@ type DiskUsage struct {
 type KafkaService interface {
 	GetClusters() []ClusterResponse
 	GetBrokersData(clusterName string) (*BrokersResponse, error)
+	GetTopicsData(ctx context.Context, clusterName string) (*TopicListResponse, error)
 }
 
 type metadataCache struct {
@@ -224,6 +262,198 @@ func (s *kafkaService) GetBrokersData(clusterName string) (*BrokersResponse, err
 		DiskUsage:                     diskUsage,
 		Version:                       version,
 		Brokers:                       brokers,
+	}, nil
+}
+
+func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*TopicListResponse, error) {
+	var clusterCfg *config.KafkaClusterConfig
+	for _, c := range s.cfg.KafkaClusters {
+		if c.Name == clusterName {
+			clusterCfg = &c
+			break
+		}
+	}
+
+	if clusterCfg == nil {
+		return nil, os.ErrNotExist
+	}
+
+	resp, err := s.getMetadata(ctx, clusterCfg)
+	if err != nil {
+		return nil, err
+	}
+
+	transport := s.getTransport(clusterCfg)
+
+	topics := make([]TopicInfo, 0, len(resp.Topics))
+	for _, topic := range resp.Topics {
+		pInfos := make([]PartitionInfo, len(topic.Partitions))
+		totalReplicas := 0
+		totalIsr := 0
+		underReplicated := 0
+
+		for i, p := range topic.Partitions {
+			replicas := make([]ReplicaInfo, 0, len(p.Replicas))
+			for _, r := range p.Replicas {
+				isInSync := false
+				for _, isr := range p.Isr {
+					if isr.ID == r.ID {
+						isInSync = true
+						break
+					}
+				}
+				replicas = append(replicas, ReplicaInfo{
+					Broker: r.ID,
+					Leader: p.Leader.ID == r.ID,
+					InSync: isInSync,
+				})
+			}
+
+			totalReplicas += len(p.Replicas)
+			totalIsr += len(p.Isr)
+			if len(p.Isr) < len(p.Replicas) {
+				underReplicated++
+			}
+
+			pInfos[i] = PartitionInfo{
+				Partition: p.ID,
+				Leader:    p.Leader.ID,
+				Replicas:  replicas,
+			}
+		}
+
+		// Group partitions by leader to fetch offsets in batch
+		leaderPartitions := make(map[int][]int) // leaderID -> list of partition indices in topic.Partitions
+		for i, p := range topic.Partitions {
+			leaderPartitions[p.Leader.ID] = append(leaderPartitions[p.Leader.ID], i)
+		}
+
+		log.Debug().
+			Str("topic", topic.Name).
+			Int("leaderCount", len(leaderPartitions)).
+			Int("partitionCount", len(topic.Partitions)).
+			Msg("Starting batch offset fetch for topic")
+
+		var pWg sync.WaitGroup
+		for leaderID, pIndices := range leaderPartitions {
+			// Find leader address
+			var leaderAddr string
+			for _, b := range resp.Brokers {
+				if b.ID == leaderID {
+					leaderAddr = net.JoinHostPort(b.Host, fmt.Sprintf("%d", b.Port))
+					break
+				}
+			}
+
+			if leaderAddr == "" {
+				continue
+			}
+
+			pWg.Add(1)
+			go func(addr string, indices []int) {
+				defer pWg.Done()
+				defer func() {
+					if r := recover(); r != nil {
+						log.Error().Interface("panic", r).Str("leader", addr).Msg("Recovered from panic in offset fetch goroutine")
+					}
+				}()
+
+				client := &kafka.Client{
+					Addr:      kafka.TCP(addr),
+					Transport: transport,
+				}
+
+				// Fetch Latest Offsets (-1)
+				latestReq := make(map[string][]kafka.OffsetRequest)
+				latestReq[topic.Name] = make([]kafka.OffsetRequest, len(indices))
+				for i, idx := range indices {
+					latestReq[topic.Name][i] = kafka.OffsetRequest{
+						Partition: topic.Partitions[idx].ID,
+						Timestamp: kafka.LastOffset,
+					}
+				}
+
+				latestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+					Topics: latestReq,
+				})
+				if err == nil && latestRes != nil && latestRes.Topics != nil {
+					if partitions, ok := latestRes.Topics[topic.Name]; ok {
+						for _, resP := range partitions {
+							// Find which local index this belongs to
+							for _, idx := range indices {
+								if topic.Partitions[idx].ID == resP.Partition {
+									pInfos[idx].OffsetMax = resP.FirstOffset
+									break
+								}
+							}
+						}
+					}
+				} else {
+					log.Warn().Err(err).Str("topic", topic.Name).Str("leader", addr).Msg("Failed to fetch latest offsets in batch")
+				}
+
+				// Fetch Earliest Offsets (-2)
+				earliestReq := make(map[string][]kafka.OffsetRequest)
+				earliestReq[topic.Name] = make([]kafka.OffsetRequest, len(indices))
+				for i, idx := range indices {
+					earliestReq[topic.Name][i] = kafka.OffsetRequest{
+						Partition: topic.Partitions[idx].ID,
+						Timestamp: kafka.FirstOffset,
+					}
+				}
+
+				earliestRes, err := client.ListOffsets(ctx, &kafka.ListOffsetsRequest{
+					Topics: earliestReq,
+				})
+				if err == nil && earliestRes != nil && earliestRes.Topics != nil {
+					if partitions, ok := earliestRes.Topics[topic.Name]; ok {
+						for _, resP := range partitions {
+							for _, idx := range indices {
+								if topic.Partitions[idx].ID == resP.Partition {
+									pInfos[idx].OffsetMin = resP.FirstOffset
+									break
+								}
+							}
+						}
+					}
+				} else {
+					log.Warn().Err(err).Str("topic", topic.Name).Str("leader", addr).Msg("Failed to fetch earliest offsets in batch")
+				}
+			}(leaderAddr, pIndices)
+		}
+		pWg.Wait()
+
+		totalOffsetMax := int64(0)
+		for _, pi := range pInfos {
+			totalOffsetMax += pi.OffsetMax
+		}
+
+		replicationFactor := 0
+		if len(topic.Partitions) > 0 {
+			replicationFactor = len(topic.Partitions[0].Replicas)
+		}
+
+		isInternal := topic.Internal || topic.Name == "_schemas"
+		topics = append(topics, TopicInfo{
+			Name:                      topic.Name,
+			Internal:                  isInternal,
+			PartitionCount:            len(topic.Partitions),
+			ReplicationFactor:         replicationFactor,
+			Replicas:                  totalReplicas,
+			InSyncReplicas:            totalIsr,
+			SegmentSize:               0,                   // Placeholder
+			SegmentCount:              int(totalOffsetMax), // Total offset max
+			BytesInPerSec:             nil,                 // Placeholder
+			BytesOutPerSec:            nil,                 // Placeholder
+			UnderReplicatedPartitions: underReplicated,
+			CleanUpPolicy:             "COMPACT_DELETE", // Placeholder
+			Partitions:                pInfos,
+		})
+	}
+
+	return &TopicListResponse{
+		PageCount: 1,
+		Topics:    topics,
 	}, nil
 }
 

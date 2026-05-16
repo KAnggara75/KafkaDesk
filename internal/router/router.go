@@ -24,6 +24,7 @@ func NewRouter(cfg *config.Config, authHandler *handler.AuthHandler, kafkaHandle
 	// Protected API Endpoints
 	mux.Handle("GET /api/v1/clusters", auth(http.HandlerFunc(kafkaHandler.GetClusters)))
 	mux.Handle("GET /api/v1/clusters/{clusterName}/brokers", auth(http.HandlerFunc(kafkaHandler.GetBrokers)))
+	mux.Handle("GET /api/v1/clusters/{clusterName}/topics", auth(http.HandlerFunc(kafkaHandler.GetTopics)))
 
 	// 2. Static File Server & SPA Fallback
 	distPath := "web/dist"
