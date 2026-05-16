@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircleUp } from '@fortawesome/free-regular-svg-icons';
 
@@ -24,6 +24,7 @@ interface InfoResponse {
 
 const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
   const [info, setInfo] = useState<InfoResponse | null>(null);
 
@@ -122,11 +123,14 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
         {/* Sidebar */}
         <aside className="w-56 bg-white border-r border-gray-200 py-4 flex-shrink-0">
           <nav className="space-y-1">
-            <a className="flex items-center px-4 py-2 text-sm font-medium text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600" href="/">
+            <Link
+              className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'}`}
+              to="/"
+            >
               Dashboard
-            </a>
+            </Link>
             {clusters.map((cluster) => {
-              const isExpanded = expandedClusters[cluster.name];
+              const isExpanded = expandedClusters[cluster.name] || location.pathname.startsWith(`/clusters/${cluster.name}`);
               return (
                 <div key={cluster.name} className="space-y-1">
                   <button
@@ -144,10 +148,15 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
 
                   {isExpanded && (
                     <div className="pl-8 space-y-1 pb-2">
-                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href={`/clusters/${cluster.name}/brokers`}>Brokers</a>
-                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Topics</a>
-                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">Consumers</a>
-                      <a className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" href="#">ACL</a>
+                      <Link
+                        className={`block px-4 py-1.5 text-sm transition-colors rounded ${location.pathname === `/clusters/${cluster.name}/brokers` ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-500 hover:text-slate-800 hover:bg-slate-50'}`}
+                        to={`/clusters/${cluster.name}/brokers`}
+                      >
+                        Brokers
+                      </Link>
+                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">Topics</Link>
+                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">Consumers</Link>
+                      <Link className="block px-4 py-1.5 text-sm text-slate-500 hover:text-slate-800 hover:bg-slate-50 rounded transition-colors" to="#">ACL</Link>
                     </div>
                   )}
                 </div>
