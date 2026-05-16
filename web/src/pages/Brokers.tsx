@@ -251,7 +251,7 @@ const Brokers: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm overflow-hidden transition-colors duration-300">
         <table className="w-full text-left text-sm border-collapse">
           <thead>
-            <tr className="bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">
+            <tr className="bg-white dark:bg-slate-800 border-b border-gray-100 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider select-none">
               <th className="px-6 py-4 cursor-pointer hover:bg-slate-50 dark:hover:bg-slate-700" onClick={() => requestSort('id')}>
                 <div className="flex items-center space-x-1">
                   {getSortIcon('id')}

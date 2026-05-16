@@ -253,7 +253,7 @@ const Topics: React.FC = () => {
       <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-lg shadow-sm transition-colors duration-300">
         <table className="min-w-full divide-y divide-gray-200 dark:divide-slate-700">
           <thead className="bg-gray-50 dark:bg-slate-800/50">
-            <tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+            <tr className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider select-none">
               <th className="px-4 py-3 text-left">
                 <input
                   type="checkbox"
