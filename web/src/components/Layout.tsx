@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 interface LayoutProps {
@@ -6,9 +6,39 @@ interface LayoutProps {
   clusters: any[];
 }
 
+interface InfoResponse {
+  build: {
+    commitId: string;
+    version: string;
+    buildTime: string;
+    isLatestRelease: boolean;
+  };
+  latestRelease: {
+    versionTag: string;
+    publishedAt: string;
+    htmlUrl: string;
+  } | null;
+}
+
 const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
   const navigate = useNavigate();
   const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
+  const [info, setInfo] = useState<InfoResponse | null>(null);
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const response = await fetch('/api/v1/info');
+        if (response.ok) {
+          const data = await response.json();
+          setInfo(data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch system info', err);
+      }
+    };
+    fetchInfo();
+  }, []);
 
   const toggleCluster = (name: string) => {
     setExpandedClusters(prev => ({
@@ -53,8 +83,17 @@ const Layout: React.FC<LayoutProps> = ({ children, clusters }) => {
             <span className="font-semibold text-sm tracking-tight text-slate-800">KafkaDesk</span>
           </div>
           <div className="flex items-center space-x-1 text-xs text-slate-400">
-            <span className="text-indigo-500 font-medium">83b5a60</span>
-            <span>v0.7.2</span>
+            {info && (
+              <>
+                <span className="text-indigo-500 font-medium">{info.build.commitId}</span>
+                <span>{info.build.version}</span>
+              </>
+            )}
+            {!info && (
+              <>
+                <span className="text-indigo-500 font-medium">Loading...</span>
+              </>
+            )}
           </div>
         </div>
         <div className="flex items-center space-x-5 text-slate-500">
