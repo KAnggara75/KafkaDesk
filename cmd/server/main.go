@@ -19,7 +19,10 @@ func main() {
 	authSvc := service.NewAuthService(cfg, blacklistSvc)
 	authHandler := handler.NewAuthHandler(authSvc)
 
-	mux := router.NewRouter(authHandler)
+	kafkaSvc := service.NewKafkaService(cfg)
+	kafkaHandler := handler.NewKafkaHandler(kafkaSvc)
+
+	mux := router.NewRouter(cfg, authHandler, kafkaHandler)
 
 	server := &http.Server{
 		Addr:         ":8080",
