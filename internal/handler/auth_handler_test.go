@@ -78,14 +78,8 @@ func TestAuthHandler_Logout(t *testing.T) {
 
 		h.Logout(rr, req)
 
-		if rr.Code != http.StatusOK {
-			t.Errorf("expected status 200, got %d", rr.Code)
-		}
-
-		var resp map[string]string
-		json.NewDecoder(rr.Body).Decode(&resp)
-		if resp["message"] != "logout berhasil" {
-			t.Errorf("expected message 'logout berhasil', got %s", resp["message"])
+		if rr.Code != http.StatusNoContent {
+			t.Errorf("expected status 204, got %d", rr.Code)
 		}
 	})
 

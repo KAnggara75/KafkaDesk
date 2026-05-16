@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
 
 	"github.com/KAnggara75/KafkaDesk/internal/service"
@@ -34,6 +35,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	token, err := h.authService.Login(req.Username, req.Password)
 	if err != nil {
 		if err == service.ErrInvalidCredentials {
+			log.Printf("[AUTH] Login failed for user: %s (invalid credentials)", req.Username)
 			w.Header().Set("Content-Type", "application/json")
 			w.WriteHeader(http.StatusUnauthorized)
 			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
@@ -43,6 +45,7 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	log.Printf("[AUTH] User logged in successfully: %s", req.Username)
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(map[string]string{"token": token})
 }
@@ -55,12 +58,13 @@ func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.authService.Logout(req.Token); err != nil {
+		log.Printf("[AUTH] Logout attempt failed: %v", err)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusBadRequest)
 		_ = json.NewEncoder(w).Encode(map[string]string{"error": "logout gagal"})
 		return
 	}
 
-	w.Header().Set("Content-Type", "application/json")
-	_ = json.NewEncoder(w).Encode(map[string]string{"message": "logout berhasil"})
+	log.Printf("[AUTH] User logged out successfully")
+	w.WriteHeader(http.StatusNoContent)
 }
