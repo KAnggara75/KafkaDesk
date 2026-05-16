@@ -4,7 +4,9 @@ import (
 	"context"
 	"crypto/tls"
 	"crypto/x509"
+	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"regexp"
@@ -320,13 +322,23 @@ func (s *kafkaService) GetTopicsData(ctx context.Context, clusterName string) (*
 			}
 
 			var offsetMax, offsetMin int64
-			conn, err := dialer.DialPartition(ctx, "tcp", clusterCfg.BootstrapServers, kafka.Partition{Topic: topic.Name, ID: p.ID})
-			log.Info().Err(err).Interface("conn", conn).Msg("Connected to topic")
+			var leaderAddr string
+			for _, b := range resp.Brokers {
+				if b.ID == p.Leader.ID {
+					leaderAddr = net.JoinHostPort(b.Host, fmt.Sprintf("%d", b.Port))
+					break
+				}
+			}
 
-			if err == nil {
-				offsetMin, _ = conn.ReadFirstOffset()
-				offsetMax, _ = conn.ReadLastOffset()
-				conn.Close() // #nosec G104
+			if leaderAddr != "" {
+				conn, err := dialer.DialPartition(ctx, "tcp", leaderAddr, kafka.Partition{Topic: topic.Name, ID: p.ID})
+				if err == nil {
+					offsetMin, _ = conn.ReadFirstOffset()
+					offsetMax, _ = conn.ReadLastOffset()
+					conn.Close() // #nosec G104
+				} else {
+					log.Debug().Err(err).Str("topic", topic.Name).Int("partition", p.ID).Str("leader", leaderAddr).Msg("Failed to dial partition leader")
+				}
 			}
 
 			pInfos = append(pInfos, PartitionInfo{
