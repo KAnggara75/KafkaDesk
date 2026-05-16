@@ -324,7 +324,7 @@ const Topics: React.FC = () => {
                     </button>
 
                     {activeDropdown === topic.name && (
-                      <div className="absolute right-6 top-10 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1">
+                      <div className="absolute right-6 top-10 w-48 bg-white border border-gray-200 rounded-md shadow-lg z-50 py-1.5">
                         <button
                           className={`w-full text-left px-4 py-2 text-sm transition-colors ${topic.internal ? 'text-gray-300 cursor-not-allowed' : 'text-slate-700 hover:bg-slate-50'}`}
                           disabled={topic.internal}
@@ -333,6 +333,7 @@ const Topics: React.FC = () => {
                           Clear Messages
                           {topic.internal && <span className="block text-[10px] text-gray-400">Not allowed for internal topics</span>}
                         </button>
+                        <div className="border-t border-gray-100 my-1"></div>
                         <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors">
                           Recreate Topic
                         </button>

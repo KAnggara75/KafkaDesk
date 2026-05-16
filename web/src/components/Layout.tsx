@@ -23,6 +23,7 @@ const Layout: React.FC = () => {
   const [expandedClusters, setExpandedClusters] = useState<Record<string, boolean>>({});
   const [info, setInfo] = useState<InfoResponse | null>(null);
   const [clusters, setClusters] = useState<any[]>([]);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   useEffect(() => {
     let isMounted = true;
@@ -90,6 +91,15 @@ const Layout: React.FC = () => {
       {/* Header */}
       <header className="h-14 bg-white border-b border-gray-200 flex items-center justify-between px-4 sticky top-0 z-50">
         <div className="flex items-center space-x-4">
+          <button
+            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            className="p-2 hover:bg-slate-50 rounded-md transition-colors text-slate-500"
+            title={isSidebarOpen ? "Hide Sidebar" : "Show Sidebar"}
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={isSidebarOpen ? "M11 19l-7-7 7-7m8 14l-7-7 7-7" : "M4 6h16M4 12h16M4 18h16"} />
+            </svg>
+          </button>
           <Link to="/" className="flex items-center space-x-2">
             <div className="w-6 h-6 bg-indigo-600 rounded-sm flex items-center justify-center">
               <svg className="w-4 h-4 text-white fill-current" viewBox="0 0 24 24">
@@ -132,10 +142,11 @@ const Layout: React.FC = () => {
         </div>
       </header>
 
-      <div className="flex min-h-[calc(100vh-3.5rem)]">
+      <div className="flex min-h-[calc(100vh-3.5rem)] relative overflow-hidden">
         {/* Sidebar */}
-        <aside className="w-56 bg-white border-r border-gray-200 py-4 flex-shrink-0">
-          <nav className="space-y-1">
+        <aside className={`bg-white border-r border-gray-200 py-4 flex-shrink-0 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'w-56 translate-x-0 opacity-100' : 'w-0 -translate-x-full opacity-0 pointer-events-none'}`}>
+          <div className="w-56"> {/* Fixed width wrapper to prevent layout shift during transition */}
+            <nav className="space-y-1">
             <Link
               className={`flex items-center px-4 py-2 text-sm font-medium transition-colors ${location.pathname === '/' ? 'text-indigo-600 bg-indigo-50 border-r-4 border-indigo-600' : 'text-slate-700 hover:bg-slate-50'}`}
               to="/"
@@ -181,6 +192,7 @@ const Layout: React.FC = () => {
               );
             })}
           </nav>
+          </div>
         </aside>
 
         {/* Main Content */}
