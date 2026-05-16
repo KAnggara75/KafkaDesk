@@ -20,7 +20,7 @@ func (h *KafkaHandler) GetClusters(w http.ResponseWriter, r *http.Request) {
 	user := r.Context().Value(UserContextKey)
 	clusters := h.kafkaService.GetClusters()
 
-	log.Printf("[KAFKA] User [%v] requested cluster list. Returning %d clusters.", user, len(clusters))
+	log.Printf("[KAFKA] User [%q] requested cluster list. Returning %d clusters.", user, len(clusters)) // #nosec G706
 
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(clusters)

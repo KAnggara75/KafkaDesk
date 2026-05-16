@@ -34,7 +34,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 
 			parts := strings.Split(authHeader, " ")
 			if len(parts) != 2 || parts[0] != "Bearer" {
-				log.Printf("[AUTH] Invalid auth header format from %s", r.RemoteAddr)
+				log.Printf("[AUTH] Invalid auth header format from %q", r.RemoteAddr) // #nosec G706
 				renderError("Invalid authorization header", http.StatusUnauthorized)
 				return
 			}
@@ -45,7 +45,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 			})
 
 			if err != nil || !token.Valid {
-				log.Printf("[AUTH] Invalid or expired token from %s: %v", r.RemoteAddr, err)
+				log.Printf("[AUTH] Invalid or expired token from %q: %v", r.RemoteAddr, err) // #nosec G706
 				renderError("Unauthorized", http.StatusUnauthorized)
 				return
 			}
@@ -59,7 +59,7 @@ func AuthMiddleware(cfg *config.Config, blacklist service.BlacklistService) func
 			// Check Blacklist
 			if jti, ok := claims["jti"].(string); ok {
 				if blacklist.IsBlacklisted(jti) {
-					log.Printf("[AUTH] Blacklisted token attempt: [JTI: %s], [User: %v]", jti, claims["sub"])
+					log.Printf("[AUTH] Blacklisted token attempt: [JTI: %q], [User: %q]", jti, claims["sub"]) // #nosec G706
 					renderError("Unauthorized: token is blacklisted", http.StatusUnauthorized)
 					return
 				}
