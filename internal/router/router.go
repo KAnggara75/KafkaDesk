@@ -19,7 +19,7 @@ func NewRouter(cfg *config.Config, authHandler *handler.AuthHandler, kafkaHandle
 	// 1. API Endpoints
 	mux.HandleFunc("GET /api/v1/info", infoHandler.GetInfo)
 	mux.HandleFunc("POST /api/v1/login", authHandler.Login)
-	mux.HandleFunc("POST /api/v1/logout", authHandler.Logout)
+	mux.HandleFunc("DELETE /api/v1/logout", authHandler.Logout)
 
 	// Protected API Endpoints
 	mux.Handle("GET /api/v1/clusters", auth(http.HandlerFunc(kafkaHandler.GetClusters)))

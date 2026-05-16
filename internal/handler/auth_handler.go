@@ -22,10 +22,6 @@ type loginRequest struct {
 	Password string `json:"password"`
 }
 
-type logoutRequest struct {
-	Token string `json:"token"`
-}
-
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req loginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -67,13 +63,14 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
-	var req logoutRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		http.Error(w, "invalid request body", http.StatusBadRequest)
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" || len(authHeader) < 7 || authHeader[:7] != "Bearer " {
+		http.Error(w, "invalid authorization header", http.StatusBadRequest)
 		return
 	}
+	token := authHeader[7:]
 
-	jti, err := h.authService.Logout(req.Token)
+	jti, err := h.authService.Logout(token)
 	if err != nil {
 		log.Warn().
 			Err(err).

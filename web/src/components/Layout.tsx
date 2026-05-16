@@ -68,7 +68,7 @@ const Layout: React.FC = () => {
     const token = localStorage.getItem('token');
     try {
       await fetch('/api/v1/logout', {
-        method: 'POST',
+        method: 'DELETE',
         headers: { 'Authorization': `Bearer ${token}` }
       });
     } catch (err) {
