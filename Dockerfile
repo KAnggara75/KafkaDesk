@@ -30,9 +30,9 @@ COPY . .
 COPY --from=frontend-builder /web/dist ./web/dist
 
 # Build-time arguments for versioning
-ARG VERSION=v0.7.2
-ARG COMMIT_ID=unknown
-ARG BUILD_TIME=unknown
+ARG VERSION=$(git describe --tags --always)
+ARG COMMIT_ID=$(git rev-parse --short HEAD)
+ARG BUILD_TIME=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
 # Build binary
 # Note: Using CGO_ENABLED=1 and amd64 as requested in user template
